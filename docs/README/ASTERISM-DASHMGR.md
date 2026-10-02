@@ -30,11 +30,13 @@ asterism-dashmgr set-presentation asterism.desktop.app.2 world
 asterism-dashmgr direct-restore asterism.desktop.app.2 transform.json
 asterism-dashmgr restore-via-hand asterism.desktop.app.2 transform.json
 asterism-dashmgr get-live-world asterism.desktop.app.2
+asterism-dashmgr find-live-uo asterism.desktop.app.2
 asterism-dashmgr save-world display-1
 asterism-dashmgr restore-display display-1 [--hand-fallback]
 ```
 
-- `direct-restore` needs chunk bridge **v2** (staged; unproven live).
+- `direct-restore` prefers shell React-fiber `setState` on chunk **v1** (unproven live).
+- `find-live-uo` reports whether a live UndockedOverlay instance was found (JSON-safe).
 - `restore-via-hand` is the proven diagnostic oracle (LeftHand→World).
 - `save-world` / `restore-display` use stable `display-N` + `spatial-state.json`.
 

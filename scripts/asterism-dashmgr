@@ -10,6 +10,7 @@
 #   asterism-dashmgr direct-restore asterism.desktop.app.2 /path/to/transform.json
 #   asterism-dashmgr restore-via-hand asterism.desktop.app.2 /path/to/transform.json
 #   asterism-dashmgr get-live-world asterism.desktop.app.2
+#   asterism-dashmgr find-live-uo asterism.desktop.app.2
 #   asterism-dashmgr save-world display-1
 #   asterism-dashmgr restore-display display-1 [--hand-fallback]
 set -euo pipefail
@@ -86,6 +87,10 @@ except Exception as e:
   get-live-world)
     key=${1:?overlay key}
     req "$(python3 -c "import json; print(json.dumps({'cmd':'get-live-world','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  find-live-uo)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'find-live-uo','wait':10,'overlay_key':'$key'}))")"
     ;;
   set-presentation)
     key=${1:?overlay key}

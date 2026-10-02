@@ -382,6 +382,7 @@ _SUPPORTED_CMDS = (
     "direct-restore",
     "restore-via-hand",
     "get-live-world",
+    "find-live-uo",
 )
 
 
@@ -417,6 +418,7 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
         "direct-restore",
         "restore-via-hand",
         "get-live-world",
+        "find-live-uo",
     ):
         if not _asterism_overlay_key_ok(fields.get("overlay_key")):
             return {"ok": False, "error": "overlay_key must start with asterism.desktop"}

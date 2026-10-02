@@ -1,0 +1,5 @@
+CONTINGENCY ONLY — prefer shell React fiber on v1.
+BASE_V1_SHA=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
+Broken v2 SHA (do not use): 83a3bcbf43f179b290614af038835395226b0d8b54aaf188ce1a44c540a8aa2a
+MOUNT gates on asterism.desktop summon keys before _uo registration.
+Staged SHA: run scripts/stage-steamvr-dashmgr-bridge-v2.1.sh on Frame.

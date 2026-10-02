@@ -10,11 +10,11 @@ Does **not** modify the Valve chunk.
 ## Safety
 
 - Backup as steamos user under `~/.local/share/asterism/backups/`
-- Verify bridged chunk hash (v1) or recognize v2
+- Exact chunk SHA allowlist (v1, or known-broken v2 for recovery only)
 - Interactive `sudo` only — never reads third-party `.env` for passwords
-- `steamos-readonly disable` → verify writable → install → `enable` → verify
-- Trap re-enables readonly on failure
-- Failures abort (no silent `|| true` on readonly ops)
+- Trap installed **before** `steamos-readonly disable`
+- Writability probe uses `sudo touch` (not ordinary-user dir perms)
+- Re-enable readonly in trap; never `|| true` on readonly ops
 
 ## Usage (Frame)
 

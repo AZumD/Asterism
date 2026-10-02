@@ -101,15 +101,31 @@ EOF
 
 cat > "$STAGE/APPLY.sh" <<'EOF'
 #!/usr/bin/env bash
-# MANUAL apply only — review staged chunk first.
+# MANUAL apply only — DO NOT USE: v2 caused a giant black rectangle on load.
+# Prefer shell-only React fiber direct-restore on chunk v1.
+# Kept for forensic re-staging / hash reproduction only.
 set -euo pipefail
 STAGE=$(cd "$(dirname "$0")" && pwd)
 DASH=/opt/steamvr/resources/webinterface/dashboard
 CHUNK=$DASH/chunk~8012d0c89.js
 EXPECTED_V1=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
 STAGED=$STAGE/chunk~8012d0c89.js
+READONLY_WAS_DISABLED=0
 
 sha() { sha256sum "$1" | awk '{print $1}'; }
+
+cleanup() {
+  if [ "$READONLY_WAS_DISABLED" = 1 ] && command -v steamos-readonly >/dev/null 2>&1; then
+    echo "Re-enabling steamos-readonly..."
+    sudo steamos-readonly enable
+  fi
+}
+# Trap BEFORE any readonly disable
+trap cleanup EXIT
+
+echo "STOP: bridge v2 is known-broken (black rectangle on SteamVR load)." >&2
+echo "Refusing APPLY. Use shell-only fiber path or staged v2.1 only after review." >&2
+exit 3
 
 echo "Preflight: live chunk must still be v1 bridged ($EXPECTED_V1)"
 live=$(sha "$CHUNK")
@@ -118,9 +134,9 @@ test "$live" = "$EXPECTED_V1"
 if command -v steamos-readonly >/dev/null 2>&1; then
   echo "Disabling steamos-readonly (interactive sudo)..."
   sudo steamos-readonly disable
-  # verify writable
-  touch "$DASH/.asterism-write-test"
-  rm -f "$DASH/.asterism-write-test"
+  READONLY_WAS_DISABLED=1
+  sudo touch "$DASH/.asterism-write-test"
+  sudo rm -f "$DASH/.asterism-write-test"
 fi
 
 BK=$HOME/.local/share/asterism/backups/bridge-v2-$(date +%Y%m%dT%H%M%S)
@@ -128,21 +144,11 @@ mkdir -p "$BK"
 cp -a "$CHUNK" "$BK/chunk~8012d0c89.js"
 echo "backup $BK"
 
-cleanup() {
-  if command -v steamos-readonly >/dev/null 2>&1; then
-    echo "Re-enabling steamos-readonly..."
-    sudo steamos-readonly enable
-    # best-effort verify: root may no longer be writable
-  fi
-}
-trap cleanup EXIT
-
 sudo install -m 0644 "$STAGED" "$CHUNK"
 echo "installed sha=$(sha "$CHUNK")"
 grep -F 'applyWorldTransformForSummonKey' "$CHUNK" >/dev/null
 grep -F 'version:2' "$CHUNK" >/dev/null
 echo "OK. Clear htmlcache and restart SteamVR."
-echo "  rm -rf ~/.cache/SteamVR/htmlcache && systemctl --user restart steamvr.service"
 EOF
 chmod +x "$STAGE/APPLY.sh"
 

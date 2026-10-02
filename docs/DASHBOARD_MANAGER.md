@@ -13,7 +13,7 @@ Related: [OWNERSHIP_BOUNDARY.md](OWNERSHIP_BOUNDARY.md), [dashboard-state/MAP_RE
 > Asterism state + Dashboard Manager map injection.**
 
 Proven path: seed `map[World]` then **LeftHand → World** (diagnostic).  
-Direct live `UndockedOverlay.state.xfTransform` restore while remaining docked to World is **implemented as staged bridge v2** and is **not live-proven yet**.
+Direct live `UndockedOverlay.state.xfTransform` restore while remaining docked to World is implemented as **shell-only React fiber lookup** on chunk bridge v1 (preferred). Prior chunk bridge v2 caused a load-time black rectangle and must not be re-applied. Direct restore is **not live-proven yet**.
 
 Restart evidence:
 
@@ -92,7 +92,8 @@ Mutable outside systemui via `vrcmd --dock-overlay` / `SetDockLocation`.
 | Path | Command | Status |
 |------|---------|--------|
 | Diagnostic | `restore-via-hand` (seed + LeftHand→World) | **Proven** across restart |
-| Preferred | `direct-restore` (map + `setState(xfTransform)`) | Staged; **unproven live** |
+| Preferred | `direct-restore` via `Dashboard._reactInternals` fiber + map/`setState` | Shell-only on v1; **unproven live** |
+| Contingency | chunk bridge v2.1 Asterism-only `_uo` register | Staged only if fiber fails |
 
 ---
 
@@ -127,10 +128,12 @@ Exact Valve transform preserved. Not merged into FrameTop-style layout.json yet.
 
 `window.__ASTERISM_STEAMVR` (purpose-built only):
 
-- v1 (live): `yWq`, `getFramesForSummonKey`
-- v2 (staged): + `_uo`, `applyWorldTransformForSummonKey`, `getLiveWorldTransformForSummonKey`
+- v1 (live / preferred): `yWq`, `getFramesForSummonKey`
+- Live UndockedOverlay: discovered via `window.Dashboard._reactInternals` in `asterism_shell.js` (not exposed as arbitrary fiber API)
+- v2 (broken): do not apply — see [BRIDGE_V2_BLACK_RECTANGLE.md](dashboard-state/BRIDGE_V2_BLACK_RECTANGLE.md)
+- v2.1 (contingency staged): Asterism-only `_uo` register
 
-No `eval`, no arbitrary object traversal, no general remote execution.
+No `eval`, no remote arbitrary fiber walk, no general remote execution.
 
 ---
 

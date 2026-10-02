@@ -194,8 +194,11 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "direct-restore"',
         'msg.cmd === "restore-via-hand"',
         'msg.cmd === "get-live-world"',
+        'msg.cmd === "find-live-uo"',
         "function directRestore",
         "function restoreViaHand",
+        "findLiveUndockedOverlayForFrame",
+        "react-fiber-setState+map",
         "JSON-safe Frame resolve",
     ):
         assert needle in shell, needle

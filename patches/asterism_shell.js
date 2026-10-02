@@ -174,6 +174,117 @@
     return out;
   }
 
+  var FIBER_WALK_MAX = 8000;
+
+  function isUndockedLikeInstance(instance, targetFrameID) {
+    if (!instance || typeof instance !== "object") return false;
+    if (typeof instance.setState !== "function") return false;
+    if (!instance.props || !instance.props.frame) return false;
+    if (instance.props.frame.frameID == null) return false;
+    if (String(instance.props.frame.frameID) !== String(targetFrameID)) return false;
+    if (!instance.state || instance.state.xfTransform == null) return false;
+    return true;
+  }
+
+  /**
+   * Bounded walk of Dashboard React fiber subtree (child/sibling only).
+   * Returns live class instance internally; never serialize instance/fiber.
+   */
+  function findLiveUndockedOverlayForFrame(frame) {
+    var frameID = frame && frame.frameID != null ? String(frame.frameID) : null;
+    var diag = {
+      ok: false,
+      frameID: frameID,
+      found: false,
+      visited: 0,
+    };
+    if (!frameID) {
+      diag.error = "no frameID";
+      return { instance: null, diag: diag };
+    }
+    var dash = window.Dashboard;
+    if (!dash || !dash._reactInternals) {
+      diag.error = "Dashboard._reactInternals missing";
+      return { instance: null, diag: diag };
+    }
+    var stack = [dash._reactInternals];
+    var visited = typeof Set !== "undefined" ? new Set() : null;
+    var count = 0;
+    while (stack.length && count < FIBER_WALK_MAX) {
+      var fiber = stack.pop();
+      if (!fiber || typeof fiber !== "object") continue;
+      if (visited) {
+        if (visited.has(fiber)) continue;
+        visited.add(fiber);
+      }
+      count++;
+      try {
+        var sn = fiber.stateNode;
+        if (isUndockedLikeInstance(sn, frameID)) {
+          diag.ok = true;
+          diag.found = true;
+          diag.visited = count;
+          diag.signature = { hasSetState: true, hasXfTransform: true };
+          return { instance: sn, diag: diag };
+        }
+      } catch (_) {}
+      try {
+        if (fiber.child) stack.push(fiber.child);
+        if (fiber.sibling) stack.push(fiber.sibling);
+      } catch (_) {}
+    }
+    diag.visited = count;
+    diag.error =
+      count >= FIBER_WALK_MAX ? "fiber cap reached" : "no matching live instance";
+    return { instance: null, diag: diag };
+  }
+
+  /** Safe static inspect — do not invoke render outside React. */
+  function inspectRenderUndockedSafe() {
+    var dash = window.Dashboard;
+    var fn = dash && dash.renderUndockedLocalFrameTransforms;
+    if (typeof fn !== "function") return { present: false };
+    var src = "";
+    try {
+      src = Function.prototype.toString.call(fn);
+    } catch (_) {}
+    return {
+      present: true,
+      arity: fn.length,
+      sourceLen: src.length,
+      sourcePreview: src.slice(0, 480),
+      mentionsXfTransform: src.indexOf("xfTransform") >= 0,
+      mentionsCreateElement:
+        src.indexOf("createElement") >= 0 || src.indexOf("jsx") >= 0,
+      mentionsFrame: src.indexOf("frame") >= 0,
+    };
+  }
+
+  function findLiveDiag(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var resolved = resolveFrames(overlayKey);
+    var frame = resolved.frames && resolved.frames[0];
+    if (!frame) {
+      return {
+        ok: false,
+        error: "no frame for overlay",
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var found = findLiveUndockedOverlayForFrame(frame);
+    return {
+      ok: !!(found.diag && found.diag.found),
+      path: "react-fiber",
+      overlay_key: overlayKey,
+      resolve_source: resolved.source,
+      dockLocationName: ywqName(frame.docking && frame.docking.dockLocation),
+      live: found.diag,
+      renderUndocked: inspectRenderUndockedSafe(),
+    };
+  }
+
   function compareTransforms(a, b) {
     if (!a || !b) return { ok: false, error: "missing transform" };
     var ta = a.translation || {};
@@ -386,45 +497,91 @@
     if (!looksAsterismKey(overlayKey)) {
       return { ok: false, error: "overlay key must start with asterism.desktop" };
     }
-    var bridge = window.__ASTERISM_STEAMVR;
-    if (!bridge || typeof bridge.applyWorldTransformForSummonKey !== "function") {
-      return {
-        ok: false,
-        error:
-          "applyWorldTransformForSummonKey unavailable (need chunk bridge v2)",
-        bridgeVersion: bridge && bridge.version,
-      };
-    }
     var plain = cloneTransform(transform);
     if (!plain) return { ok: false, error: "bad transform" };
-    var applied;
-    try {
-      applied = bridge.applyWorldTransformForSummonKey(overlayKey, plain);
-    } catch (e) {
-      return { ok: false, error: String(e) };
+
+    var e = ywq();
+    if (!e || e.World == null) {
+      return { ok: false, error: "yWq.World unavailable (need chunk bridge v1+)" };
     }
-    var live = null;
-    if (typeof bridge.getLiveWorldTransformForSummonKey === "function") {
+    var resolved = resolveFrames(overlayKey);
+    var frame = resolved.frames && resolved.frames[0];
+    if (!frame || !frame.docking) {
+      return {
+        ok: false,
+        error: "no frame/docking",
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var dockLoc = frame.docking.dockLocation;
+    if (dockLoc !== e.World) {
+      return {
+        ok: false,
+        error: "dockLocation must be World for direct restore",
+        dockLocationName: ywqName(dockLoc),
+        path: "react-fiber-setState+map",
+      };
+    }
+
+    // Preferred: shell-only via Dashboard React fiber (no Valve chunk v2).
+    var found = findLiveUndockedOverlayForFrame(frame);
+    if (found.instance) {
+      var map = frame.docking.m_mapLastRelativeTransformForDockLocation;
+      if (!map || typeof map.set !== "function") {
+        return { ok: false, error: "map missing", live: found.diag };
+      }
       try {
-        live = bridge.getLiveWorldTransformForSummonKey(overlayKey);
-      } catch (_) {}
+        map.set(e.World, plain);
+        found.instance.setState({ xfTransform: plain });
+      } catch (err) {
+        return {
+          ok: false,
+          error: String(err),
+          path: "react-fiber-setState+map",
+          live: found.diag,
+        };
+      }
+      var snap = frameSnapshot(frame);
+      return {
+        ok: true,
+        path: "react-fiber-setState+map",
+        frameID: String(frame.frameID),
+        dockLocationName: "World",
+        liveInstanceFound: true,
+        live: found.diag,
+        requested: plain,
+        capture: snap,
+        note:
+          "setState is async — call get-live-world after ~1s for numerical proof; experimental until live-validated",
+      };
     }
-    var cap = captureOverlay(overlayKey);
-    var compare = null;
-    if (live && live.ok && live.xfTransform) {
-      compare = compareTransforms(plain, live.xfTransform);
+
+    // Optional: chunk bridge v2 apply (discouraged; prior v2 caused black rectangle).
+    var bridge = window.__ASTERISM_STEAMVR;
+    if (bridge && typeof bridge.applyWorldTransformForSummonKey === "function") {
+      try {
+        var applied = bridge.applyWorldTransformForSummonKey(overlayKey, plain);
+        return {
+          ok: !!(applied && applied.ok),
+          path: (applied && applied.path) || "chunk-bridge-v2",
+          applied: applied,
+          liveInstanceFound: false,
+          fiber: found.diag,
+          requested: plain,
+          note: "fell back to chunk bridge apply; prefer fiber path",
+        };
+      } catch (err2) {
+        return { ok: false, error: String(err2), fiber: found.diag };
+      }
     }
+
     return {
-      ok: !!(applied && applied.ok),
-      path: (applied && applied.path) || "direct-restore",
-      applied: applied,
-      live: live,
-      capture: cap.ok ? cap.capture : null,
-      dockLocationName:
-        cap.ok && cap.capture ? cap.capture.dockLocationName : null,
-      compare: compare,
-      note:
-        "direct World xfTransform restore is experimental until live-validated",
+      ok: false,
+      error: "no live UndockedOverlay instance via React fiber",
+      path: "react-fiber-setState+map",
+      liveInstanceFound: false,
+      live: found.diag,
+      bridgeVersion: bridge && bridge.version,
     };
   }
 
@@ -432,19 +589,43 @@
     if (!looksAsterismKey(overlayKey)) {
       return { ok: false, error: "overlay key must start with asterism.desktop" };
     }
-    var bridge = window.__ASTERISM_STEAMVR;
-    if (!bridge || typeof bridge.getLiveWorldTransformForSummonKey !== "function") {
+    var resolved = resolveFrames(overlayKey);
+    var frame = resolved.frames && resolved.frames[0];
+    if (!frame) {
       return {
         ok: false,
-        error: "getLiveWorldTransformForSummonKey unavailable (need chunk bridge v2)",
-        bridgeVersion: bridge && bridge.version,
+        error: "no frame for overlay",
+        resolve: resolveFramesReport(overlayKey),
       };
     }
-    try {
-      return bridge.getLiveWorldTransformForSummonKey(overlayKey);
-    } catch (e) {
-      return { ok: false, error: String(e) };
+    var found = findLiveUndockedOverlayForFrame(frame);
+    if (found.instance && found.instance.state && found.instance.state.xfTransform) {
+      return {
+        ok: true,
+        path: "react-fiber",
+        frameID: String(frame.frameID),
+        dockLocation: frame.docking && frame.docking.dockLocation,
+        dockLocationName: ywqName(frame.docking && frame.docking.dockLocation),
+        xfTransform: cloneTransform(found.instance.state.xfTransform),
+        live: found.diag,
+      };
     }
+
+    var bridge = window.__ASTERISM_STEAMVR;
+    if (bridge && typeof bridge.getLiveWorldTransformForSummonKey === "function") {
+      try {
+        return bridge.getLiveWorldTransformForSummonKey(overlayKey);
+      } catch (e) {
+        return { ok: false, error: String(e), fiber: found.diag };
+      }
+    }
+    return {
+      ok: false,
+      error: "no live xfTransform via React fiber",
+      path: "react-fiber",
+      live: found.diag,
+      bridgeVersion: bridge && bridge.version,
+    };
   }
 
   /** Diagnostic oracle: seed map[World] then LeftHand -> World. Not normal boot. */
@@ -525,27 +706,43 @@
         "onVrCmdDockOverlayRequested",
         "frames",
         "activeFrame",
+        "renderUndockedLocalFrameTransforms",
+        "_reactInternals",
+        "onGrabStart",
+        "onGrabEnd",
       ];
       report.dashboardHas = {};
       for (var i = 0; i < interesting.length; i++) {
         var name = interesting[i];
-        var found = false;
+        var has = false;
         try {
-          found =
+          has =
             typeof window.Dashboard[name] !== "undefined" ||
             (proto && proto.indexOf(name) >= 0);
         } catch (_) {}
-        report.dashboardHas[name] = found;
+        report.dashboardHas[name] = has;
       }
+      report.hasReactInternals = !!window.Dashboard._reactInternals;
+      report.renderUndocked = inspectRenderUndockedSafe();
       report.frameResolve = resolveFramesReport("asterism.desktop.app.2");
       report.bridgeVersion =
         window.__ASTERISM_STEAMVR && window.__ASTERISM_STEAMVR.version;
-      report.hasDirectApply =
-        !!(
-          window.__ASTERISM_STEAMVR &&
+      report.liveUndocked = null;
+      try {
+        var rf = resolveFrames("asterism.desktop.app.2");
+        if (rf.frames && rf.frames[0]) {
+          report.liveUndocked = findLiveUndockedOverlayForFrame(rf.frames[0]).diag;
+        }
+      } catch (_) {}
+      report.hasDirectApply = !!(
+        (report.liveUndocked && report.liveUndocked.found) ||
+        (window.__ASTERISM_STEAMVR &&
           typeof window.__ASTERISM_STEAMVR.applyWorldTransformForSummonKey ===
-            "function"
-        );
+            "function")
+      );
+      report.directRestorePath = report.liveUndocked && report.liveUndocked.found
+        ? "react-fiber-setState+map"
+        : "unavailable";
       if (
         report.frameResolve.source === "window.Dashboard_only" ||
         !(report.frameResolve.count > 0)
@@ -555,6 +752,16 @@
         );
       } else {
         report.notes.push("Frame resolve via " + report.frameResolve.source);
+      }
+      if (report.liveUndocked && report.liveUndocked.found) {
+        report.notes.push(
+          "live UndockedOverlay reachable via Dashboard._reactInternals fiber walk"
+        );
+      } else {
+        report.notes.push(
+          "live UndockedOverlay fiber lookup: " +
+            ((report.liveUndocked && report.liveUndocked.error) || "not attempted")
+        );
       }
     } else {
       report.notes.push("window.Dashboard not set yet");
@@ -584,6 +791,8 @@
         result = restoreViaHand(msg.overlay_key, msg.transform);
       else if (msg.cmd === "get-live-world")
         result = getLiveWorld(msg.overlay_key);
+      else if (msg.cmd === "find-live-uo")
+        result = findLiveDiag(msg.overlay_key);
       else result = { ok: false, error: "unknown cmd" };
     } catch (e) {
       result = { ok: false, error: String(e) };
@@ -703,6 +912,7 @@
           directRestore: directRestore,
           restoreViaHand: restoreViaHand,
           getLiveWorld: getLiveWorld,
+          findLiveUndocked: findLiveDiag,
           list: listAsterism,
           connectWs: connectWs,
         };

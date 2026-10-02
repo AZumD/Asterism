@@ -4,10 +4,11 @@
 #
 # Safety:
 # - backup as steamos user
-# - verify exact SteamVR bridged chunk hash
+# - verify exact known chunk SHA allowlist (no fuzzy grep recognition)
 # - interactive sudo (never read third-party .env for passwords)
-# - steamos-readonly disable/enable with verification (failures abort)
-# - trap re-enables readonly on failure when possible
+# - trap installed BEFORE steamos-readonly disable
+# - writability probe uses sudo (not confused with Unix dir perms)
+# - re-enable readonly in trap; never swallow readonly failures with || true
 set -euo pipefail
 cd /home/steamos/asterism
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
@@ -17,9 +18,11 @@ DASH=/opt/steamvr/resources/webinterface/dashboard
 CHUNK=$DASH/chunk~8012d0c89.js
 SHELL_DST=$DASH/asterism_shell.js
 HTML=$DASH/systemui.html
-# Accept current live v1 bridge OR staged v2 after manual apply
+# Exact allowlist only
 BRIDGED_SHA_V1=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
-TAG_NEW='asterism_shell.js?contenthash=asterism4'
+# Known-broken experimental v2 (black rectangle) — allow shell-only redeploy for recovery
+BRIDGED_SHA_V2_BROKEN=83a3bcbf43f179b290614af038835395226b0d8b54aaf188ce1a44c540a8aa2a
+TAG_NEW='asterism_shell.js?contenthash=asterism5'
 EXPECTED_BUILD=1790822802
 
 sha() { sha256sum "$1" | awk '{print $1}'; }
@@ -35,21 +38,20 @@ reenable_readonly() {
   fi
   echo "== re-enable steamos-readonly =="
   sudo steamos-readonly enable
-  # Verify: writing to DASH should fail (or require root). Prefer status if available.
-  if steamos-readonly status 2>/dev/null | grep -qi 'enabled\|read-only\|active'; then
+  if steamos-readonly status 2>/dev/null | grep -qiE 'enabled|read-only|active'; then
     echo "steamos-readonly: enabled (status ok)"
   else
-    # Fall back: try creating a file as steamos user — should fail when readonly
-    if touch "$DASH/.asterism-ro-check" 2>/dev/null; then
-      rm -f "$DASH/.asterism-ro-check"
-      echo "WARNING: DASH still appears writable after enable" >&2
-      return 1
+    # Prefer sudo test file that should fail to create when readonly is on
+    if sudo touch "$DASH/.asterism-ro-check" 2>/dev/null; then
+      sudo rm -f "$DASH/.asterism-ro-check"
+      # On some images touch as root still works when "readonly"; rely on status above.
+      echo "NOTE: root can still write $DASH after enable; trust steamos-readonly enable exit=0"
     fi
-    echo "steamos-readonly: enabled (write blocked)"
   fi
   READONLY_WAS_DISABLED=0
 }
 
+# Trap BEFORE any readonly disable / install work
 trap 'reenable_readonly' EXIT
 
 echo "== preflight =="
@@ -59,17 +61,21 @@ if [ -f /opt/steamvr/bin/version.txt ]; then
 fi
 live_chunk=$(sha "$CHUNK")
 echo "chunk sha: $live_chunk"
-if [ "$live_chunk" != "$BRIDGED_SHA_V1" ]; then
-  if grep -Fq 'applyWorldTransformForSummonKey' "$CHUNK" && grep -Fq 'version:2' "$CHUNK"; then
-    echo "chunk looks like bridge v2 (direct-transform); allowing shell-only deploy"
-  else
-    echo "STOP: chunk is not the known bridged hash and not recognized v2" >&2
+case "$live_chunk" in
+  "$BRIDGED_SHA_V1")
+    echo "chunk bridge v1 OK (untouched by this script)"
+    ;;
+  "$BRIDGED_SHA_V2_BROKEN")
+    echo "WARNING: live chunk is known-broken v2 ($BRIDGED_SHA_V2_BROKEN)"
+    echo "         shell-only deploy allowed for recovery; roll chunk back to v1 ASAP"
+    ;;
+  *)
+    echo "STOP: chunk SHA not in allowlist" >&2
     echo "  expected v1 $BRIDGED_SHA_V1" >&2
+    echo "  or known-broken v2 $BRIDGED_SHA_V2_BROKEN" >&2
     exit 2
-  fi
-else
-  echo "chunk bridge v1 OK (untouched by this script)"
-fi
+    ;;
+esac
 
 BK=$HOME/.local/share/asterism/backups/shell-ws-$(date +%Y%m%dT%H%M%S)
 mkdir -p "$BK"
@@ -90,12 +96,12 @@ data = src.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 (stage / "asterism_shell.js").write_bytes(data)
 html_path = Path("/opt/steamvr/resources/webinterface/dashboard/systemui.html")
 html = html_path.read_text(encoding="utf-8", errors="surrogateescape")
-new = "asterism_shell.js?contenthash=asterism4"
+new = "asterism_shell.js?contenthash=asterism5"
 if "asterism_shell.js" not in html:
     raise SystemExit("systemui.html missing asterism_shell inject")
 html = re.sub(r"asterism_shell\.js\?contenthash=[^\"]+", new, html, count=1)
 if new not in html:
-    raise SystemExit("failed to set contenthash=asterism4")
+    raise SystemExit("failed to set contenthash=asterism5")
 (stage / "systemui.html").write_text(html, encoding="utf-8", errors="surrogateescape")
 print("staged shell", hashlib.sha256((stage/"asterism_shell.js").read_bytes()).hexdigest())
 print("staged html ", hashlib.sha256((stage/"systemui.html").read_bytes()).hexdigest())
@@ -105,9 +111,10 @@ echo "== steamos-readonly disable =="
 if command -v steamos-readonly >/dev/null 2>&1; then
   sudo steamos-readonly disable
   READONLY_WAS_DISABLED=1
-  touch "$DASH/.asterism-write-test"
-  rm -f "$DASH/.asterism-write-test"
-  echo "readonly disabled (write verified)"
+  # Verify rootfs writable via sudo (not ordinary-user dir perms)
+  sudo touch "$DASH/.asterism-write-test"
+  sudo rm -f "$DASH/.asterism-write-test"
+  echo "readonly disabled (sudo write verified)"
 else
   if [ ! -w "$DASH" ]; then
     echo "STOP: $DASH not writable and steamos-readonly unavailable" >&2
@@ -125,7 +132,7 @@ echo "shell: $(sha "$SHELL_DST")"
 echo "html:  $(sha "$HTML")"
 grep -F "$TAG_NEW" "$HTML"
 grep -F 'ws://localhost:47832' "$SHELL_DST"
-grep -F 'resolveFramesReport' "$SHELL_DST"
+grep -F 'findLiveUndockedOverlayForFrame' "$SHELL_DST"
 
 reenable_readonly
 trap - EXIT

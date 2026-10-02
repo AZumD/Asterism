@@ -71,27 +71,32 @@ Therefore:
 LeftHand→World is a **test oracle / diagnostic fallback** (`restore-via-hand`).  
 It must **not** be the normal startup restore path (visible controller dock, awake controller required).
 
-## Direct World restore (staged, unproven live)
+## Direct World restore (shell-only fiber — unproven live)
 
-Target path (bridge v2 — stage only until headset-validated):
+**Preferred path (no new Valve chunk patch):**
 
 ```
-saved P
-  -> map.set(World, P)
-  -> UndockedOverlay.setState({ xfTransform: P })
-  -> dockLocation remains World
+overlayKey
+  -> v1 getFramesForSummonKey -> Frame / frameID
+  -> Dashboard._reactInternals child/sibling walk
+  -> class instance with props.frame.frameID match + state.xfTransform
+  -> map.set(World, P) + instance.setState({ xfTransform: P })
+  -> dockLocation stays World
 ```
 
-Staging script: `scripts/stage-steamvr-dashmgr-bridge-v2.sh`  
-Exposes only:
+Broken chunk bridge v2 (`83a3bcbf…`) caused a giant black rectangle **on load**
+(before any direct-restore call). Analysis:
+[BRIDGE_V2_BLACK_RECTANGLE.md](BRIDGE_V2_BLACK_RECTANGLE.md).
 
-- `getFramesForSummonKey`
-- `applyWorldTransformForSummonKey`
-- `getLiveWorldTransformForSummonKey`
-- `_uo` registry (UndockedOverlay instances by frameID)
+CLI:
 
-CLI experimental: `asterism-dashmgr direct-restore <overlay-key> <transform.json>`  
-Diagnostic: `asterism-dashmgr restore-via-hand <overlay-key> <transform.json>`
+- `asterism-dashmgr find-live-uo <overlay-key>`
+- `asterism-dashmgr direct-restore <overlay-key> <transform.json>` (fiber first)
+- `asterism-dashmgr get-live-world <overlay-key>` (after ~1s; setState is async)
+- `asterism-dashmgr restore-via-hand …` (proven diagnostic fallback)
+
+Contingency Valve patch (Asterism-only register):  
+`scripts/stage-steamvr-dashmgr-bridge-v2.1.sh` — stage only if fiber fails live.
 
 Do **not** claim direct restore is proven until visual/live tested on Frame.
 
