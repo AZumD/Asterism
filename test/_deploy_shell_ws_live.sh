@@ -22,7 +22,7 @@ HTML=$DASH/systemui.html
 BRIDGED_SHA_V1=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
 # Known-broken experimental v2 (black rectangle) — allow shell-only redeploy for recovery
 BRIDGED_SHA_V2_BROKEN=83a3bcbf43f179b290614af038835395226b0d8b54aaf188ce1a44c540a8aa2a
-TAG_NEW='asterism_shell.js?contenthash=asterism5'
+TAG_NEW='asterism_shell.js?contenthash=asterism6'
 EXPECTED_BUILD=1790822802
 
 sha() { sha256sum "$1" | awk '{print $1}'; }
@@ -96,12 +96,12 @@ data = src.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 (stage / "asterism_shell.js").write_bytes(data)
 html_path = Path("/opt/steamvr/resources/webinterface/dashboard/systemui.html")
 html = html_path.read_text(encoding="utf-8", errors="surrogateescape")
-new = "asterism_shell.js?contenthash=asterism5"
+new = "asterism_shell.js?contenthash=asterism6"
 if "asterism_shell.js" not in html:
     raise SystemExit("systemui.html missing asterism_shell inject")
 html = re.sub(r"asterism_shell\.js\?contenthash=[^\"]+", new, html, count=1)
 if new not in html:
-    raise SystemExit("failed to set contenthash=asterism5")
+    raise SystemExit("failed to set contenthash=asterism6")
 (stage / "systemui.html").write_text(html, encoding="utf-8", errors="surrogateescape")
 print("staged shell", hashlib.sha256((stage/"asterism_shell.js").read_bytes()).hexdigest())
 print("staged html ", hashlib.sha256((stage/"systemui.html").read_bytes()).hexdigest())
@@ -133,6 +133,7 @@ echo "html:  $(sha "$HTML")"
 grep -F "$TAG_NEW" "$HTML"
 grep -F 'ws://localhost:47832' "$SHELL_DST"
 grep -F 'findLiveUndockedOverlayForFrame' "$SHELL_DST"
+grep -F 'seedPresentationTransform' "$SHELL_DST"
 
 reenable_readonly
 trap - EXIT

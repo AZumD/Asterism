@@ -33,6 +33,8 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `spatial/spatial_state.py` | [SPATIAL_STATE.md](SPATIAL_STATE.md) |
 | `spatial/display_map.py` | [DISPLAY_MAP.md](DISPLAY_MAP.md) |
 | `spatial/restore.py` | [RESTORE.md](RESTORE.md) |
+| `scripts/asterism-spatial` | [ASTERISM-SPATIAL.md](ASTERISM-SPATIAL.md) |
+| `systemd/asterism-spatial.service` | [ASTERISM-SPATIAL.md](ASTERISM-SPATIAL.md) |
 | `docs/DASHBOARD_MANAGER.md` | SteamVR Dashboard Manager spatial model |
 | `docs/dashboard-state/MAP_RESTORE.md` | Restart persistence proven; direct xf staged |
 | `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
@@ -41,6 +43,7 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `test/test_dashmgr_queue.py` | [_VERIFY_DASHMGR_QUEUE.md](_VERIFY_DASHMGR_QUEUE.md) |
 | `test/test_spatial_persistence.py` | [_VERIFY_SPATIAL_PERSISTENCE.md](_VERIFY_SPATIAL_PERSISTENCE.md) |
 | `test/test_fiber_direct_restore.py` | [_VERIFY_FIBER_DIRECT_RESTORE.md](_VERIFY_FIBER_DIRECT_RESTORE.md) |
+| `test/test_spatial_lifecycle.py` | [_VERIFY_SPATIAL_LIFECYCLE.md](_VERIFY_SPATIAL_LIFECYCLE.md) |
 | `test/_deploy_shell_ws_live.sh` | [_DEPLOY_SHELL_WS_LIVE.md](_DEPLOY_SHELL_WS_LIVE.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |

@@ -1,0 +1,26 @@
+[Unit]
+Description=Asterism spatial persistence (snapshot/restore VR presentation + World pose)
+Documentation=file://@REPO@/docs/README/ASTERISM-SPATIAL.md
+BindsTo=steamvr.service
+Requisite=steamvr.service
+# Start after dashboard IPC + desktop overlays exist; stop before they tear down.
+After=steamvr.service asterism-dashboard.service asterism-desktop.service
+Before=shutdown.target
+# On stop, run our ExecStop before desktop/dashboard stop (reverse of After).
+# systemd stops dependents first when BindsTo steamvr stops.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=ASTERISM_ROOT=@REPO@
+Environment=PYTHONPATH=@REPO@
+# Restore after SteamVR + shell WS + overlays are up.
+ExecStart=@REPO@/scripts/asterism-spatial restore-all
+# Best-effort snapshot before systemui dies. Keep short so reboot cannot hang.
+TimeoutStartSec=180
+TimeoutStopSec=20
+ExecStop=@REPO@/scripts/asterism-spatial snapshot-all
+KillMode=mixed
+
+[Install]
+WantedBy=steamvr.service

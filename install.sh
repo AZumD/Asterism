@@ -88,14 +88,17 @@ mkdir -p "$unit_dir" "$HOME/.local/bin" "$HOME/.local/share/applications" "$ASTE
 
 sed "s|@REPO@|$root|g" "$root/systemd/asterism-dashboard.service" > "$unit_dir/asterism-dashboard.service"
 sed "s|@REPO@|$root|g" "$root/systemd/asterism-desktop.service" > "$unit_dir/asterism-desktop.service"
+sed "s|@REPO@|$root|g" "$root/systemd/asterism-spatial.service" > "$unit_dir/asterism-spatial.service"
 sed "s|@REPO@|$root|g" "$root/desktop-settings/asterism-desktop-settings.desktop" \
   > "$HOME/.local/share/applications/asterism-desktop-settings.desktop"
 
 ln -sfn "$root/scripts/asterism-ctl.sh" "$HOME/.local/bin/asterism-ctl"
 ln -sfn "$root/scripts/asterism-displayctl" "$HOME/.local/bin/asterism-displayctl"
 ln -sfn "$root/scripts/asterism-layout" "$HOME/.local/bin/asterism-layout"
+ln -sfn "$root/scripts/asterism-spatial" "$HOME/.local/bin/asterism-spatial"
 ln -sfn "$root/desktop-settings/asterism-desktop-settings" "$HOME/.local/bin/asterism-desktop-settings"
 chmod +x "$root"/scripts/*.sh "$root"/scripts/asterism-displayctl "$root"/scripts/asterism-layout \
+  "$root"/scripts/asterism-spatial \
   "$root"/desktop/*.sh \
   "$root"/dashboard/*.py "$root"/desktop-settings/*.py \
   "$root"/desktop-settings/asterism-desktop-settings \
@@ -138,10 +141,10 @@ fi
 # Drop old default.target wants if present
 rm -f "$unit_dir/default.target.wants/asterism-dashboard.service"
 systemctl --user daemon-reload
-systemctl --user enable asterism-dashboard.service asterism-desktop.service
+systemctl --user enable asterism-dashboard.service asterism-desktop.service asterism-spatial.service
 # Start now if SteamVR is up
 if systemctl --user is-active steamvr.service >/dev/null 2>&1; then
-  systemctl --user start asterism-dashboard.service asterism-desktop.service || true
+  systemctl --user start asterism-dashboard.service asterism-desktop.service asterism-spatial.service || true
 fi
 
 asterism_log INFO "install completed"

@@ -378,6 +378,7 @@ _SUPPORTED_CMDS = (
     "probe",
     "capture",
     "seed-world",
+    "seed-presentation-transform",
     "set-presentation",
     "direct-restore",
     "restore-via-hand",
@@ -414,6 +415,7 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
     if cmd in (
         "capture",
         "seed-world",
+        "seed-presentation-transform",
         "set-presentation",
         "direct-restore",
         "restore-via-hand",
@@ -422,6 +424,23 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
     ):
         if not _asterism_overlay_key_ok(fields.get("overlay_key")):
             return {"ok": False, "error": "overlay_key must start with asterism.desktop"}
+    if cmd == "seed-presentation-transform":
+        pres = str(fields.get("presentation") or "").lower()
+        if pres not in (
+            "dashboard",
+            "world",
+            "theater",
+            "lefthand",
+            "righthand",
+            "left",
+            "right",
+        ):
+            return {
+                "ok": False,
+                "error": "presentation must be dashboard|world|theater|lefthand|righthand",
+            }
+        if not isinstance(fields.get("transform"), dict):
+            return {"ok": False, "error": "transform object required"}
     cid = _dashmgr_new_id()
     msg = {"id": cid, "cmd": cmd, **fields}
     with _DASHMGR_COND:

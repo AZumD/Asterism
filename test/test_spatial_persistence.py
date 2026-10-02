@@ -82,13 +82,13 @@ def test_spatial_state_roundtrip_atomic() -> None:
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "spatial-state.json"
         st = set_display_world("display-1", SAMPLE_P, path=path)
-        assert st["version"] == 1
+        assert st["version"] == 2
         assert st["displays"]["display-1"]["presentation"] == "world"
         loaded = load(path)
-        assert loaded["displays"]["display-1"]["worldTransform"]["translation"]["x"] == \
-            SAMPLE_P["translation"]["x"]
+        xf = loaded["displays"]["display-1"]["transforms"]["world"]
+        assert xf["translation"]["x"] == SAMPLE_P["translation"]["x"]
         # round-trip exact
-        xf = validate_transform(loaded["displays"]["display-1"]["worldTransform"])
+        xf = validate_transform(xf)
         assert xf["rotation"]["w"] == SAMPLE_P["rotation"]["w"]
         # atomic: parent exists, file is valid JSON
         assert path.is_file()
@@ -163,8 +163,10 @@ def test_multi_display_state() -> None:
         set_display_world("display-2", p2, path=path)
         st = load(path)
         assert set(st["displays"]) == {"display-1", "display-2"}
-        assert st["displays"]["display-1"]["worldTransform"]["translation"]["x"] != \
-            st["displays"]["display-2"]["worldTransform"]["translation"]["x"]
+        assert (
+            st["displays"]["display-1"]["transforms"]["world"]["translation"]["x"]
+            != st["displays"]["display-2"]["transforms"]["world"]["translation"]["x"]
+        )
     print("OK multi-display state")
 
 
@@ -172,19 +174,9 @@ def test_restore_validation_and_missing_frame() -> None:
     from spatial.restore import restore_display
 
     displays = [{"id": "display-1", "enabled": True}]
-    # No runtime key for display-1
-    r = restore_display(
-        "display-1",
-        keys=[],
-        prefer_direct=True,
-        allow_hand_fallback=False,
-        transform=SAMPLE_P,
-    )
-    # overlay_key_for_display will consult real displays.json; force via empty keys
-    # by using a display id that cannot map when keys=[] and displays mocked through
-    # overlay_key_for_display directly:
     assert overlay_key_for_display("display-1", keys=[], displays=displays) is None
-    assert r.get("ok") is False
+    r = restore_display("display-1", keys=[], allow_hand_fallback=False)
+    assert r.get("ok") is False or r.get("skipped")
     print("OK missing frame handling")
 
 

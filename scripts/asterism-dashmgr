@@ -6,6 +6,7 @@
 #   asterism-dashmgr map
 #   asterism-dashmgr capture asterism.desktop.app.2
 #   asterism-dashmgr seed-world asterism.desktop.app.2 /path/to/transform.json
+#   asterism-dashmgr seed-presentation-transform asterism.desktop.app.2 world /path/to/transform.json
 #   asterism-dashmgr set-presentation asterism.desktop.app.2 world
 #   asterism-dashmgr direct-restore asterism.desktop.app.2 /path/to/transform.json
 #   asterism-dashmgr restore-via-hand asterism.desktop.app.2 /path/to/transform.json
@@ -74,6 +75,29 @@ except Exception as e:
     file=${2:?transform json file}
     load_xf_body seed-world "$key" "$file" | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
     ;;
+  seed-presentation-transform)
+    key=${1:?overlay key}
+    mode=${2:?presentation}
+    file=${3:?transform json file}
+    python3 - "$key" "$mode" "$file" <<'PY' | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
+import json, sys
+key, mode, path = sys.argv[1], sys.argv[2], sys.argv[3]
+xf = json.load(open(path, encoding="utf-8"))
+if isinstance(xf, dict) and xf.get("world"):
+    xf = xf["world"]
+elif isinstance(xf, dict) and xf.get("transform"):
+    xf = xf["transform"]
+elif isinstance(xf, dict) and xf.get("xfTransform"):
+    xf = xf["xfTransform"]
+print(json.dumps({
+    "cmd": "seed-presentation-transform",
+    "wait": 10,
+    "overlay_key": key,
+    "presentation": mode,
+    "transform": xf,
+}))
+PY
+    ;;
   direct-restore)
     key=${1:?overlay key}
     file=${2:?transform json file}
@@ -102,8 +126,8 @@ except Exception as e:
     PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 -c "
 import json, sys
 sys.path.insert(0, r'$ROOT')
-from spatial.restore import save_display_from_capture
-print(json.dumps(save_display_from_capture('$did'), indent=2))
+from spatial.restore import snapshot_display
+print(json.dumps(snapshot_display('$did'), indent=2))
 "
     ;;
   restore-display)

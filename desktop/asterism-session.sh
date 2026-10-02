@@ -127,16 +127,15 @@ if [ "${output_count:-1}" -gt 1 ]; then
   asterism_log INFO "multi-display: PerWindow strategy outputs=$output_count"
 fi
 
-# Restore VR dock/theater/world layout ONCE when this gamescope creates overlays.
-# Sole owner of startup layout apply — dashboard show/focus must NEVER spawn apply
-# (that raced theater→dashboard→world). Concurrent applies are rejected via flock.
+# Topology sync only — do NOT mutate VR dock/presentation here.
+# asterism-spatial.service is the sole owner of startup presentation + World pose
+# restore (and ExecStop snapshot). Racing legacy layout dock mutations against
+# spatial restore caused theater→dashboard→world fights.
 if [ -x "$root/scripts/asterism-layout" ]; then
   (
     export XDG_RUNTIME_DIR=/run/user/$(id -u)
     export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
-    export ASTERISM_LAYOUT_OWNER=asterism-session
     "$root/scripts/asterism-layout" sync >/dev/null 2>&1 || true
-    "$root/scripts/asterism-layout" apply --wait 90 >>"$ASTERISM_LOG_DIR/layout.log" 2>&1 || true
   ) &
   disown || true
 fi

@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Asterism spatial persistence CLI (user/service facing).
+# Usage:
+#   asterism-spatial show|status
+#   asterism-spatial snapshot-display display-1
+#   asterism-spatial snapshot-all
+#   asterism-spatial restore-display display-1
+#   asterism-spatial restore-all
+set -euo pipefail
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+cmd=${1:-}
+shift || true
+
+case "$cmd" in
+  show|status)
+    python3 - <<'PY'
+import json, sys
+from spatial.restore import status_report
+print(json.dumps(status_report(), indent=2))
+PY
+    ;;
+  snapshot-display)
+    did=${1:?display id e.g. display-1}
+    python3 -c "
+import json, sys
+from spatial.restore import snapshot_display
+r = snapshot_display('$did')
+print(json.dumps(r, indent=2))
+sys.exit(0 if r.get('ok') or r.get('skipped') else 1)
+"
+    ;;
+  snapshot-all)
+    # Best-effort; used by systemd ExecStop — keep bounded
+    WS_TIMEOUT=${ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT:-12}
+    python3 -c "
+import json, sys, os
+from spatial.restore import snapshot_all
+r = snapshot_all(wait_ws=True, ws_timeout=float(os.environ.get('ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT', '12')))
+print(json.dumps(r, indent=2))
+# ExecStop must not hang reboot: exit 0 on best-effort
+sys.exit(0)
+"
+    ;;
+  restore-display)
+    did=${1:?display id e.g. display-1}
+    python3 -c "
+import json, sys
+from spatial.restore import restore_display, wait_for_ws
+if not wait_for_ws(timeout=60):
+    print(json.dumps({'ok': False, 'error': 'ws not connected'}))
+    sys.exit(1)
+r = restore_display('$did', allow_hand_fallback=False)
+print(json.dumps(r, indent=2))
+sys.exit(0 if r.get('ok') or r.get('skipped') else 1)
+"
+    ;;
+  restore-all)
+    python3 -c "
+import json, sys
+from spatial.restore import restore_all
+r = restore_all(allow_hand_fallback=False, wait_ws=True, ws_timeout=90.0, wait_overlays=60.0)
+print(json.dumps(r, indent=2))
+sys.exit(0 if r.get('ok') else 1)
+"
+    ;;
+  ""|-h|--help)
+    sed -n '2,10p' "$0"
+    exit 0
+    ;;
+  *)
+    echo "unknown command: $cmd" >&2
+    exit 2
+    ;;
+esac
+echo

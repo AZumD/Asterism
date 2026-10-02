@@ -1,0 +1,409 @@
+#!/usr/bin/env python3
+"""Lifecycle spatial persistence tests (no SteamVR)."""
+from __future__ import annotations
+
+import json
+import sys
+import tempfile
+from pathlib import Path
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from spatial.spatial_state import (  # noqa: E402
+    SCHEMA_VERSION,
+    get_transform,
+    load,
+    load_or_default,
+    migrate_v1_to_v2,
+    save,
+    set_display_world,
+    validate_state,
+)
+from spatial import restore as restore_mod  # noqa: E402
+
+P = {
+    "translation": {"x": 0.9, "y": 1.6, "z": -1.16},
+    "rotation": {"w": 0.9, "x": 0.14, "y": -0.4, "z": 0.01},
+    "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+}
+Q = {
+    "translation": {"x": 1.5, "y": 1.2, "z": -2.0},
+    "rotation": {"w": 1.0, "x": 0.0, "y": 0.0, "z": 0.0},
+    "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+}
+
+
+def test_v1_to_v2_migration() -> None:
+    v1 = {
+        "version": 1,
+        "displays": {
+            "display-1": {
+                "presentation": "world",
+                "worldTransform": P,
+            }
+        },
+    }
+    v2 = migrate_v1_to_v2(v1)
+    assert v2["version"] == 2
+    assert "worldTransform" not in v2["displays"]["display-1"]
+    assert v2["displays"]["display-1"]["transforms"]["world"]["translation"]["x"] == 0.9
+    # load path
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "spatial-state.json"
+        path.write_text(json.dumps(v1), encoding="utf-8")
+        loaded = load(path)
+        assert loaded["version"] == 2
+        save(loaded, path)
+        again = json.loads(path.read_text(encoding="utf-8"))
+        assert again["version"] == 2
+        assert "transforms" in again["displays"]["display-1"]
+    print("OK v1->v2 migration")
+
+
+def test_atomic_v2_save() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "spatial-state.json"
+        set_display_world("display-1", P, path=path)
+        set_display_world("display-2", Q, path=path)
+        st = load(path)
+        assert st["version"] == SCHEMA_VERSION
+        assert get_transform(st["displays"]["display-1"], "world")["translation"]["x"] == 0.9
+        assert get_transform(st["displays"]["display-2"], "world")["translation"]["x"] == 1.5
+    print("OK atomic v2")
+
+
+def test_snapshot_prefers_live_world() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "spatial-state.json"
+        # Pre-seed stale map value
+        set_display_world("display-1", P, path=path)
+
+        def fake_req(cmd, **kw):
+            if cmd == "capture":
+                return {
+                    "ok": True,
+                    "result": {
+                        "ok": True,
+                        "capture": {
+                            "frameID": "1",
+                            "dockLocationName": "World",
+                            "rememberedTransforms": {"World": P},
+                        },
+                        "world": P,
+                    },
+                }
+            if cmd == "get-live-world":
+                return {
+                    "ok": True,
+                    "result": {"ok": True, "xfTransform": Q},
+                }
+            raise AssertionError(cmd)
+
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(
+                restore_mod, "overlay_key_for_display", return_value="asterism.desktop.app.2"
+            ):
+                r = restore_mod.snapshot_display("display-1", path=path)
+        assert r["ok"] and r["live_world_used"] is True
+        st = load(path)
+        assert st["displays"]["display-1"]["transforms"]["world"]["translation"]["x"] == 1.5
+        assert st["displays"]["display-1"]["presentation"] == "world"
+    print("OK snapshot live world")
+
+
+def test_snapshot_failure_preserves_peers() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "spatial-state.json"
+        set_display_world("display-1", P, path=path)
+        set_display_world("display-2", Q, path=path)
+
+        def fake_req(cmd, **kw):
+            key = kw.get("overlay_key")
+            if key == "asterism.desktop.app.2":
+                return {"ok": True, "result": {"ok": False, "error": "boom"}}
+            if cmd == "capture":
+                return {
+                    "ok": True,
+                    "result": {
+                        "ok": True,
+                        "capture": {
+                            "dockLocationName": "Dashboard",
+                            "rememberedTransforms": {},
+                        },
+                    },
+                }
+            if cmd == "get-live-world":
+                return {"ok": True, "result": {"ok": False}}
+            raise AssertionError((cmd, key))
+
+        def fake_map(keys=None, displays=None):
+            return [
+                {"display_id": "display-1", "overlay_key": "asterism.desktop.app.2"},
+                {"display_id": "display-2", "overlay_key": "asterism.desktop.app.3"},
+            ]
+
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(restore_mod, "map_displays_to_overlays", side_effect=fake_map):
+                with mock.patch.object(
+                    restore_mod,
+                    "overlay_key_for_display",
+                    side_effect=lambda did, keys=None: {
+                        "display-1": "asterism.desktop.app.2",
+                        "display-2": "asterism.desktop.app.3",
+                    }[did],
+                ):
+                    restore_mod.snapshot_all(path=path, wait_ws=False)
+        st = load(path)
+        # display-1 must keep prior world P (failed capture must not wipe)
+        assert st["displays"]["display-1"]["transforms"]["world"]["translation"]["x"] == 0.9
+        assert st["displays"]["display-2"]["presentation"] == "dashboard"
+    print("OK snapshot peer preserve")
+
+
+def test_world_restore_presentation_first() -> None:
+    calls = []
+
+    def fake_req(cmd, **kw):
+        calls.append(cmd)
+        if cmd == "seed-presentation-transform":
+            return {"ok": True, "result": {"ok": True}}
+        if cmd == "set-presentation":
+            return {"ok": True, "result": {"ok": True, "path": "SetDockLocation"}}
+        if cmd == "capture":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "capture": {"dockLocationName": "World"},
+                },
+            }
+        if cmd == "find-live-uo":
+            return {"ok": True, "result": {"ok": True, "live": {"found": True}}}
+        if cmd == "direct-restore":
+            return {
+                "ok": True,
+                "result": {"ok": True, "path": "react-fiber-setState+map"},
+            }
+        raise AssertionError(cmd)
+
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "s.json"
+        set_display_world("display-1", P, path=path)
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(
+                restore_mod, "overlay_key_for_display", return_value="asterism.desktop.app.2"
+            ):
+                r = restore_mod.restore_display(
+                    "display-1", path=path, allow_hand_fallback=False
+                )
+        assert r["ok"]
+        assert "restore-via-hand" not in calls
+        # presentation before direct
+        assert calls.index("set-presentation") < calls.index("direct-restore")
+        assert "seed-presentation-transform" in calls
+    print("OK world restore order")
+
+
+def test_dashboard_theater_restore() -> None:
+    for mode in ("dashboard", "theater"):
+        calls = []
+
+        def fake_req(cmd, **kw):
+            calls.append(cmd)
+            if cmd in ("seed-presentation-transform", "set-presentation"):
+                return {"ok": True, "result": {"ok": True}}
+            if cmd == "capture":
+                title = "Dashboard" if mode == "dashboard" else "Theater"
+                return {
+                    "ok": True,
+                    "result": {
+                        "ok": True,
+                        "capture": {"dockLocationName": title},
+                    },
+                }
+            raise AssertionError(cmd)
+
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "s.json"
+            st = {
+                "version": 2,
+                "displays": {
+                    "display-1": {
+                        "presentation": mode,
+                        "transforms": {mode: P} if mode != "dashboard" else {},
+                    }
+                },
+            }
+            if mode == "dashboard":
+                st["displays"]["display-1"]["transforms"] = {"dashboard": P}
+            save(st, path)
+            with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+                with mock.patch.object(
+                    restore_mod,
+                    "overlay_key_for_display",
+                    return_value="asterism.desktop.app.2",
+                ):
+                    r = restore_mod.restore_display(
+                        "display-1", path=path, allow_hand_fallback=False
+                    )
+            assert r["ok"], r
+            assert "direct-restore" not in calls
+            assert "restore-via-hand" not in calls
+    print("OK dashboard/theater restore")
+
+
+def test_no_hand_on_startup_restore_all() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "s.json"
+        set_display_world("display-1", P, path=path)
+
+        def fake_req(cmd, **kw):
+            if cmd == "seed-presentation-transform":
+                return {"ok": True, "result": {"ok": True}}
+            if cmd == "set-presentation":
+                return {"ok": True, "result": {"ok": True}}
+            if cmd == "capture":
+                return {
+                    "ok": True,
+                    "result": {
+                        "ok": True,
+                        "capture": {"dockLocationName": "Dashboard"},
+                    },
+                }
+            if cmd == "find-live-uo":
+                return {"ok": True, "result": {"ok": False, "live": {"found": False}}}
+            if cmd == "restore-via-hand":
+                raise AssertionError("hand must not be used")
+            if cmd == "direct-restore":
+                return {"ok": True, "result": {"ok": False, "error": "not world"}}
+            return {"ok": True, "result": {"ok": False}}
+
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(restore_mod, "wait_for_ws", return_value=True):
+                with mock.patch.object(
+                    restore_mod,
+                    "map_displays_to_overlays",
+                    return_value=[
+                        {
+                            "display_id": "display-1",
+                            "overlay_key": "asterism.desktop.app.2",
+                        }
+                    ],
+                ):
+                    with mock.patch.object(
+                        restore_mod,
+                        "overlay_key_for_display",
+                        return_value="asterism.desktop.app.2",
+                    ):
+                        # Force wait_world to fail quickly
+                        with mock.patch.object(
+                            restore_mod,
+                            "_wait_world_ready",
+                            return_value={"ok": False, "error": "timeout"},
+                        ):
+                            r = restore_mod.restore_all(
+                                path=path, wait_ws=False, allow_hand_fallback=False
+                            )
+        assert r["results"][0].get("path") != "restore-via-hand"
+    print("OK no hand fallback startup")
+
+
+def test_missing_corrupt_state() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "missing.json"
+        assert load_or_default(path)["displays"] == {}
+        path.write_text("{bad", encoding="utf-8")
+        assert load_or_default(path)["displays"] == {}
+    print("OK missing/corrupt")
+
+
+def test_session_no_layout_apply_race() -> None:
+    session = (ROOT / "desktop" / "asterism-session.sh").read_text(encoding="utf-8")
+    # No executable layout apply invocation (comments may mention the old race)
+    assert "asterism-layout\" apply" not in session
+    assert "asterism-layout' apply" not in session
+    assert 'asterism-layout" sync' in session or "asterism-layout\" sync" in session
+    assert "asterism-spatial.service" in session
+    unit = (ROOT / "systemd" / "asterism-spatial.service").read_text(encoding="utf-8")
+    assert "After=steamvr.service asterism-dashboard.service asterism-desktop.service" in unit
+    assert "ExecStart=" in unit and "restore-all" in unit
+    assert "ExecStop=" in unit and "snapshot-all" in unit
+    assert "TimeoutStopSec=20" in unit
+    assert "WantedBy=steamvr.service" in unit
+    print("OK session/systemd ownership")
+
+
+def test_shell_seed_presentation() -> None:
+    shell = (ROOT / "patches" / "asterism_shell.js").read_text(encoding="utf-8")
+    assert "seedPresentationTransform" in shell
+    assert 'msg.cmd === "seed-presentation-transform"' in shell
+    assert "presentation must be dashboard|world|theater|lefthand|righthand" in shell
+    # dashmgr rejects non-asterism
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "ad", ROOT / "dashboard" / "asterism-dashboard.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(mod)
+    mod.dashmgr_reset_for_tests()
+    bad = mod.dashmgr_enqueue(
+        "seed-presentation-transform",
+        overlay_key="steam.other",
+        presentation="world",
+        transform=P,
+    )
+    assert bad["ok"] is False
+    bad2 = mod.dashmgr_enqueue(
+        "seed-presentation-transform",
+        overlay_key="asterism.desktop.app.2",
+        presentation="nope",
+        transform=P,
+    )
+    assert bad2["ok"] is False
+    ok = mod.dashmgr_enqueue(
+        "seed-presentation-transform",
+        overlay_key="asterism.desktop.app.2",
+        presentation="theater",
+        transform=P,
+    )
+    assert ok["ok"] is True
+    print("OK seed-presentation-transform")
+
+
+def test_mapping_stable_ids() -> None:
+    from spatial.display_map import map_displays_to_overlays
+
+    rows = map_displays_to_overlays(
+        keys=["asterism.desktop.app.2", "asterism.desktop.app.9"],
+        displays=[
+            {"id": "display-1", "enabled": True},
+            {"id": "display-2", "enabled": True},
+        ],
+    )
+    assert rows[0]["display_id"] == "display-1"
+    assert rows[1]["overlay_key"] == "asterism.desktop.app.9"
+    print("OK mapping")
+
+
+def main() -> int:
+    test_v1_to_v2_migration()
+    test_atomic_v2_save()
+    test_snapshot_prefers_live_world()
+    test_snapshot_failure_preserves_peers()
+    test_world_restore_presentation_first()
+    test_dashboard_theater_restore()
+    test_no_hand_on_startup_restore_all()
+    test_missing_corrupt_state()
+    test_session_no_layout_apply_race()
+    test_shell_seed_presentation()
+    test_mapping_stable_ids()
+    print("OK all lifecycle tests")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

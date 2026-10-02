@@ -372,6 +372,22 @@
     try {
       dockLoc = dock && dock.dockLocation;
     } catch (_) {}
+    var dockTransformId = null;
+    try {
+      if (dock && typeof dock.GetDockLocationTransformID === "function") {
+        dockTransformId = dock.GetDockLocationTransformID(dockLoc);
+      }
+    } catch (_) {}
+    try {
+      if (
+        dockTransformId == null &&
+        window.__ASTERISM_STEAMVR &&
+        window.Dashboard &&
+        typeof window.Dashboard.GetDockLocationTransformID === "function"
+      ) {
+        dockTransformId = window.Dashboard.GetDockLocationTransformID(dockLoc);
+      }
+    } catch (_) {}
     return {
       frameID: frame.frameID != null ? String(frame.frameID) : null,
       associatedSummonOverlayKeys: keys,
@@ -379,6 +395,9 @@
       dockLocation: dockLoc,
       dockLocationName: ywqName(dockLoc),
       rememberedTransforms: remembered,
+      rememberedTransformKeys: Object.keys(remembered),
+      dockLocationTransformID:
+        dockTransformId != null ? String(dockTransformId) : null,
       scaleForActivePage: scale != null ? Number(scale) : null,
     };
   }
@@ -408,13 +427,32 @@
     };
   }
 
-  function seedWorld(overlayKey, transform) {
+  function presentationToYwq(e, name) {
+    var n = String(name || "").toLowerCase();
+    if (!e) return null;
+    if (n === "dashboard") return e.Dashboard;
+    if (n === "world") return e.World;
+    if (n === "theater") return e.Theater;
+    if (n === "lefthand" || n === "left") return e.LeftHand;
+    if (n === "righthand" || n === "right") return e.RightHand;
+    return null;
+  }
+
+  function seedPresentationTransform(overlayKey, presentation, transform) {
     if (!looksAsterismKey(overlayKey)) {
       return { ok: false, error: "overlay key must start with asterism.desktop" };
     }
     var e = ywq();
-    if (!e || e.World == null) {
-      return { ok: false, error: "yWq.World unavailable (need chunk bridge)" };
+    if (!e) {
+      return { ok: false, error: "yWq unavailable (need chunk bridge)" };
+    }
+    var loc = presentationToYwq(e, presentation);
+    if (loc == null) {
+      return {
+        ok: false,
+        error:
+          "presentation must be dashboard|world|theater|lefthand|righthand",
+      };
     }
     var resolved = resolveFrames(overlayKey);
     var frame = resolved.frames && resolved.frames[0];
@@ -431,13 +469,18 @@
     }
     var plain = cloneTransform(transform);
     if (!plain) return { ok: false, error: "bad transform" };
-    map.set(e.World, plain);
+    map.set(loc, plain);
     return {
       ok: true,
       overlay_key: overlayKey,
+      presentation: String(presentation || "").toLowerCase(),
       seeded: plain,
       after: frameSnapshot(frame),
     };
+  }
+
+  function seedWorld(overlayKey, transform) {
+    return seedPresentationTransform(overlayKey, "world", transform);
   }
 
   function setPresentation(overlayKey, mode) {
@@ -445,15 +488,8 @@
       return { ok: false, error: "overlay key must start with asterism.desktop" };
     }
     var e = ywq();
-    var loc = null;
     var name = String(mode || "").toLowerCase();
-    if (e) {
-      if (name === "dashboard") loc = e.Dashboard;
-      else if (name === "world") loc = e.World;
-      else if (name === "theater") loc = e.Theater;
-      else if (name === "lefthand" || name === "left") loc = e.LeftHand;
-      else if (name === "righthand" || name === "right") loc = e.RightHand;
-    }
+    var loc = presentationToYwq(e, name);
     var resolved = resolveFrames(overlayKey);
     var frame = resolved.frames && resolved.frames[0];
     if (frame && frame.docking && typeof frame.docking.SetDockLocation === "function" && loc != null) {
@@ -783,6 +819,12 @@
       else if (msg.cmd === "capture") result = captureOverlay(msg.overlay_key);
       else if (msg.cmd === "seed-world")
         result = seedWorld(msg.overlay_key, msg.transform);
+      else if (msg.cmd === "seed-presentation-transform")
+        result = seedPresentationTransform(
+          msg.overlay_key,
+          msg.presentation,
+          msg.transform
+        );
       else if (msg.cmd === "set-presentation")
         result = setPresentation(msg.overlay_key, msg.mode);
       else if (msg.cmd === "direct-restore")
@@ -908,6 +950,7 @@
           probe: runDashboardProbe,
           capture: captureOverlay,
           seedWorld: seedWorld,
+          seedPresentationTransform: seedPresentationTransform,
           setPresentation: setPresentation,
           directRestore: directRestore,
           restoreViaHand: restoreViaHand,
