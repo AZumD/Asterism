@@ -27,12 +27,18 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `scripts/asterism-dashboard-inspect` | [ASTERISM-DASHBOARD-INSPECT.md](ASTERISM-DASHBOARD-INSPECT.md) |
 | `scripts/asterism-dashmgr` | [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md) |
 | `scripts/patch-steamvr-dashmgr-bridge.sh` | [PATCH-STEAMVR-DASHMGR-BRIDGE.md](PATCH-STEAMVR-DASHMGR-BRIDGE.md) |
+| `scripts/stage-steamvr-dashmgr-bridge-v2.sh` | [STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md](STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md) |
+| `spatial/spatial_state.py` | [SPATIAL_STATE.md](SPATIAL_STATE.md) |
+| `spatial/display_map.py` | [DISPLAY_MAP.md](DISPLAY_MAP.md) |
+| `spatial/restore.py` | [RESTORE.md](RESTORE.md) |
 | `docs/DASHBOARD_MANAGER.md` | SteamVR Dashboard Manager spatial model |
-| `docs/dashboard-state/MAP_RESTORE.md` | Map restore probe + Valve World-map gate |
+| `docs/dashboard-state/MAP_RESTORE.md` | Restart persistence proven; direct xf staged |
 | `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
 | `test/test_dashboard_manager_docs.sh` | [_VERIFY_DASHBOARD_MANAGER_DOCS.md](_VERIFY_DASHBOARD_MANAGER_DOCS.md) |
 | `test/test_dashmgr_bridge_docs.sh` | [_VERIFY_DASHMGR_BRIDGE_DOCS.md](_VERIFY_DASHMGR_BRIDGE_DOCS.md) |
 | `test/test_dashmgr_queue.py` | [_VERIFY_DASHMGR_QUEUE.md](_VERIFY_DASHMGR_QUEUE.md) |
+| `test/test_spatial_persistence.py` | [_VERIFY_SPATIAL_PERSISTENCE.md](_VERIFY_SPATIAL_PERSISTENCE.md) |
+| `test/_deploy_shell_ws_live.sh` | [_DEPLOY_SHELL_WS_LIVE.md](_DEPLOY_SHELL_WS_LIVE.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |

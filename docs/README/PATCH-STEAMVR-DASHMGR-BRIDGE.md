@@ -6,9 +6,11 @@ Script: `scripts/patch-steamvr-dashmgr-bridge.sh`
 
 Hash-gated, exact-string minimal exposure of Frame lookup for Asterism:
 
-`window.__ASTERISM_STEAMVR = { yWq, getFramesForSummonKey }`
+`window.__ASTERISM_STEAMVR = { yWq, getFramesForSummonKey }` (bridge **v1**, live)
 
-Does not change Valve docking behavior. Use only after Phase 1 proves `window.Dashboard` cannot resolve Frames.
+Does not change Valve docking behavior. Restart World-pose persistence via map
+seed + LeftHand→World is **proven**. For direct `xfTransform` restore (v2), see
+[STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md](STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md).
 
 ## Usage
 

@@ -1,0 +1,2 @@
+BASE_V1_SHA=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
+STAGED_V2_SHA=(run scripts/stage-steamvr-dashmgr-bridge-v2.sh on Frame)

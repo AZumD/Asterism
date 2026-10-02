@@ -8,9 +8,11 @@ Exercise dashmgr FIFO queue + minimal WebSocket transport (no SteamVR):
 
 - empty poll / FIFO A→B→C
 - reject unsupported cmds and non-`asterism.desktop*` keys
+  (including `direct-restore` / `restore-via-hand` / `get-live-world`)
 - simulated WS client: hello → command → result → waiter
 - reconnect after disconnect
 - HTTP enqueue/poll still works for CLI/debug
+- no silent queue overwrite (FIFO)
 
 ## Run
 

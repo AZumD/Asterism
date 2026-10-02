@@ -112,7 +112,14 @@ def test_queue_fifo_and_reject() -> None:
 
     bad = ad.dashmgr_enqueue("nope")
     assert bad["ok"] is False
-    for cmd in ("capture", "seed-world", "set-presentation"):
+    for cmd in (
+        "capture",
+        "seed-world",
+        "set-presentation",
+        "direct-restore",
+        "restore-via-hand",
+        "get-live-world",
+    ):
         rej = ad.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False
         assert "asterism.desktop" in rej["error"]

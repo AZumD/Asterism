@@ -3,10 +3,17 @@
 # Usage:
 #   asterism-dashmgr probe
 #   asterism-dashmgr list
+#   asterism-dashmgr map
 #   asterism-dashmgr capture asterism.desktop.app.2
 #   asterism-dashmgr seed-world asterism.desktop.app.2 /path/to/transform.json
 #   asterism-dashmgr set-presentation asterism.desktop.app.2 world
+#   asterism-dashmgr direct-restore asterism.desktop.app.2 /path/to/transform.json
+#   asterism-dashmgr restore-via-hand asterism.desktop.app.2 /path/to/transform.json
+#   asterism-dashmgr get-live-world asterism.desktop.app.2
+#   asterism-dashmgr save-world display-1
+#   asterism-dashmgr restore-display display-1 [--hand-fallback]
 set -euo pipefail
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 HTTP="${ASTERISM_HTTP:-http://127.0.0.1:47831}"
 cmd=${1:-}
 shift || true
@@ -18,12 +25,44 @@ req() {
     -d "$body"
 }
 
+load_xf_body() {
+  local cmd_name=$1
+  local key=$2
+  local file=$3
+  python3 - "$cmd_name" "$key" "$file" <<'PY'
+import json, sys
+cmd, key, path = sys.argv[1], sys.argv[2], sys.argv[3]
+xf = json.load(open(path, encoding="utf-8"))
+if isinstance(xf, dict) and xf.get("world"):
+    xf = xf["world"]
+elif isinstance(xf, dict) and xf.get("transform"):
+    xf = xf["transform"]
+elif isinstance(xf, dict) and xf.get("capture"):
+    rem = (xf.get("capture") or {}).get("rememberedTransforms") or {}
+    xf = rem.get("World") or xf
+print(json.dumps({"cmd": cmd, "wait": 15, "overlay_key": key, "transform": xf}))
+PY
+}
+
 case "$cmd" in
   probe)
     req '{"cmd":"probe","wait":10}'
     ;;
   list)
     req '{"cmd":"list","wait":10}'
+    ;;
+  map)
+    PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 -c "
+import json, sys
+sys.path.insert(0, r'$ROOT')
+from spatial.display_map import map_displays_to_overlays
+try:
+    rows = map_displays_to_overlays()
+    print(json.dumps({'ok': True, 'mapping': rows}, indent=2))
+except Exception as e:
+    print(json.dumps({'ok': False, 'error': str(e)}, indent=2))
+    sys.exit(1)
+"
     ;;
   capture)
     key=${1:?overlay key}
@@ -32,32 +71,56 @@ case "$cmd" in
   seed-world)
     key=${1:?overlay key}
     file=${2:?transform json file}
-    python3 - "$key" "$file" <<'PY' | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
-import json,sys
-key, path = sys.argv[1], sys.argv[2]
-xf = json.load(open(path))
-# Allow full capture wrapper or bare transform
-if isinstance(xf, dict) and "world" in xf and xf["world"]:
-    xf = xf["world"]
-elif isinstance(xf, dict) and "transform" in xf:
-    xf = xf["transform"]
-elif isinstance(xf, dict) and "capture" in xf:
-    rem = (xf.get("capture") or {}).get("rememberedTransforms") or {}
-    xf = rem.get("World") or xf
-print(json.dumps({"cmd": "seed-world", "wait": 10, "overlay_key": key, "transform": xf}))
-PY
+    load_xf_body seed-world "$key" "$file" | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
+    ;;
+  direct-restore)
+    key=${1:?overlay key}
+    file=${2:?transform json file}
+    load_xf_body direct-restore "$key" "$file" | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
+    ;;
+  restore-via-hand)
+    key=${1:?overlay key}
+    file=${2:?transform json file}
+    load_xf_body restore-via-hand "$key" "$file" | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
+    ;;
+  get-live-world)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'get-live-world','wait':10,'overlay_key':'$key'}))")"
     ;;
   set-presentation)
     key=${1:?overlay key}
     mode=${2:?mode}
     req "$(python3 -c "import json; print(json.dumps({'cmd':'set-presentation','wait':10,'overlay_key':'$key','mode':'$mode'}))")"
     ;;
+  save-world)
+    did=${1:?display id e.g. display-1}
+    PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 -c "
+import json, sys
+sys.path.insert(0, r'$ROOT')
+from spatial.restore import save_display_from_capture
+print(json.dumps(save_display_from_capture('$did'), indent=2))
+"
+    ;;
+  restore-display)
+    did=${1:?display id e.g. display-1}
+    hand=0
+    if [ "${2:-}" = "--hand-fallback" ]; then hand=1; fi
+    PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 -c "
+import json, sys
+sys.path.insert(0, r'$ROOT')
+from spatial.restore import restore_display, wait_for_ws
+if not wait_for_ws(timeout=30):
+    print(json.dumps({'ok': False, 'error': 'ws not connected'}))
+    sys.exit(1)
+print(json.dumps(restore_display('$did', allow_hand_fallback=bool($hand)), indent=2))
+"
+    ;;
   wait-result)
     id=${1:?id}
     curl -fsS "$HTTP/dashmgr/result/$id"
     ;;
   ""|-h|--help)
-    sed -n '2,10p' "$0"
+    sed -n '2,16p' "$0"
     exit 0
     ;;
   *)

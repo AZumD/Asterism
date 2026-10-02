@@ -1,0 +1,12 @@
+# Base live chunk (bridge v1)
+BASE_V1_SHA=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
+STEAMVR_BUILD=1790822802
+
+# Staged v2 SHA is produced on Frame by:
+#   bash scripts/stage-steamvr-dashmgr-bridge-v2.sh
+# See /tmp/asterism-dashmgr-bridge-v2/HASHES.txt
+
+Needles (each count must be 1 on v1 bridged chunk):
+1. window.__ASTERISM_STEAMVR||(window.__ASTERISM_STEAMVR={version:1,...getFramesForSummonKey...})
+2. componentDidMount(){const e=this.props.frame;this.m_NudgeReactionHandle=
+3. componentWillUnmount(){var e,t,r,n;null===(e=this.m_NudgeReactionHandle)||void 0===e||e.call(this),null===(t=this.m_DockLocationReactionHandle)

@@ -157,6 +157,66 @@
     };
   }
 
+  /** JSON-safe Frame resolve (never embed raw Valve Frame objects). */
+  function resolveFramesReport(overlayKey) {
+    var resolved = resolveFrames(overlayKey);
+    var frames = resolved.frames || [];
+    var snaps = [];
+    for (var i = 0; i < frames.length; i++) {
+      snaps.push(frameSnapshot(frames[i]));
+    }
+    var out = {
+      source: resolved.source || "none",
+      count: snaps.length,
+      frames: snaps,
+    };
+    if (resolved.reason) out.reason = resolved.reason;
+    return out;
+  }
+
+  function compareTransforms(a, b) {
+    if (!a || !b) return { ok: false, error: "missing transform" };
+    var ta = a.translation || {};
+    var tb = b.translation || {};
+    var dx = Number(ta.x) - Number(tb.x);
+    var dy = Number(ta.y) - Number(tb.y);
+    var dz = Number(ta.z) - Number(tb.z);
+    var translationError = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    var ra = a.rotation || {};
+    var rb = b.rotation || {};
+    var dot =
+      Number(ra.w) * Number(rb.w) +
+      Number(ra.x) * Number(rb.x) +
+      Number(ra.y) * Number(rb.y) +
+      Number(ra.z) * Number(rb.z);
+    if (dot > 1) dot = 1;
+    if (dot < -1) dot = -1;
+    var angleErrorRad = 2 * Math.acos(Math.abs(dot));
+    var scaleError = null;
+    if (a.scale != null && b.scale != null) {
+      var sa =
+        typeof a.scale === "object"
+          ? [Number(a.scale.x), Number(a.scale.y), Number(a.scale.z)]
+          : [Number(a.scale), Number(a.scale), Number(a.scale)];
+      var sb =
+        typeof b.scale === "object"
+          ? [Number(b.scale.x), Number(b.scale.y), Number(b.scale.z)]
+          : [Number(b.scale), Number(b.scale), Number(b.scale)];
+      scaleError = Math.sqrt(
+        Math.pow(sa[0] - sb[0], 2) +
+          Math.pow(sa[1] - sb[1], 2) +
+          Math.pow(sa[2] - sb[2], 2)
+      );
+    }
+    return {
+      ok: true,
+      translationError: translationError,
+      angleErrorRad: angleErrorRad,
+      angleErrorDeg: (angleErrorRad * 180) / Math.PI,
+      scaleError: scaleError,
+    };
+  }
+
   function frameSnapshot(frame) {
     if (!frame) return null;
     var dock = frame.docking;
@@ -217,13 +277,14 @@
       return { ok: false, error: "overlay key must start with asterism.desktop" };
     }
     var resolved = resolveFrames(overlayKey);
+    var report = resolveFramesReport(overlayKey);
     var frame = resolved.frames && resolved.frames[0];
     if (!frame) {
       return {
         ok: false,
         error: "no frame for overlay",
         overlay_key: overlayKey,
-        resolve: resolved,
+        resolve: report,
       };
     }
     var snap = frameSnapshot(frame);
@@ -247,7 +308,11 @@
     var resolved = resolveFrames(overlayKey);
     var frame = resolved.frames && resolved.frames[0];
     if (!frame || !frame.docking) {
-      return { ok: false, error: "no frame/docking", resolve: resolved };
+      return {
+        ok: false,
+        error: "no frame/docking",
+        resolve: resolveFramesReport(overlayKey),
+      };
     }
     var map = frame.docking.m_mapLastRelativeTransformForDockLocation;
     if (!map || typeof map.set !== "function") {
@@ -310,7 +375,107 @@
     } catch (err2) {
       return { ok: false, error: String(err2) };
     }
-    return { ok: false, error: "no SetDockLocation path", resolve: resolved };
+    return {
+      ok: false,
+      error: "no SetDockLocation path",
+      resolve: resolveFramesReport(overlayKey),
+    };
+  }
+
+  function directRestore(overlayKey, transform) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var bridge = window.__ASTERISM_STEAMVR;
+    if (!bridge || typeof bridge.applyWorldTransformForSummonKey !== "function") {
+      return {
+        ok: false,
+        error:
+          "applyWorldTransformForSummonKey unavailable (need chunk bridge v2)",
+        bridgeVersion: bridge && bridge.version,
+      };
+    }
+    var plain = cloneTransform(transform);
+    if (!plain) return { ok: false, error: "bad transform" };
+    var applied;
+    try {
+      applied = bridge.applyWorldTransformForSummonKey(overlayKey, plain);
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
+    var live = null;
+    if (typeof bridge.getLiveWorldTransformForSummonKey === "function") {
+      try {
+        live = bridge.getLiveWorldTransformForSummonKey(overlayKey);
+      } catch (_) {}
+    }
+    var cap = captureOverlay(overlayKey);
+    var compare = null;
+    if (live && live.ok && live.xfTransform) {
+      compare = compareTransforms(plain, live.xfTransform);
+    }
+    return {
+      ok: !!(applied && applied.ok),
+      path: (applied && applied.path) || "direct-restore",
+      applied: applied,
+      live: live,
+      capture: cap.ok ? cap.capture : null,
+      dockLocationName:
+        cap.ok && cap.capture ? cap.capture.dockLocationName : null,
+      compare: compare,
+      note:
+        "direct World xfTransform restore is experimental until live-validated",
+    };
+  }
+
+  function getLiveWorld(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var bridge = window.__ASTERISM_STEAMVR;
+    if (!bridge || typeof bridge.getLiveWorldTransformForSummonKey !== "function") {
+      return {
+        ok: false,
+        error: "getLiveWorldTransformForSummonKey unavailable (need chunk bridge v2)",
+        bridgeVersion: bridge && bridge.version,
+      };
+    }
+    try {
+      return bridge.getLiveWorldTransformForSummonKey(overlayKey);
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
+  }
+
+  /** Diagnostic oracle: seed map[World] then LeftHand -> World. Not normal boot. */
+  function restoreViaHand(overlayKey, transform) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var seed = seedWorld(overlayKey, transform);
+    if (!seed.ok) {
+      return { ok: false, error: "seed failed", seed: seed, path: "restore-via-hand" };
+    }
+    var left = setPresentation(overlayKey, "lefthand");
+    if (!left.ok) {
+      return {
+        ok: false,
+        error: "LeftHand dock failed",
+        seed: seed,
+        lefthand: left,
+        path: "restore-via-hand",
+      };
+    }
+    var world = setPresentation(overlayKey, "world");
+    return {
+      ok: !!(world && world.ok),
+      path: "restore-via-hand",
+      seed: seed,
+      lefthand: left,
+      world: world,
+      after: world && world.after,
+      note: "diagnostic/fallback only; visibly docks to controller briefly",
+    };
   }
 
   function listAsterism() {
@@ -372,10 +537,18 @@
         } catch (_) {}
         report.dashboardHas[name] = found;
       }
-      report.frameResolve = resolveFrames("asterism.desktop.app.2");
+      report.frameResolve = resolveFramesReport("asterism.desktop.app.2");
+      report.bridgeVersion =
+        window.__ASTERISM_STEAMVR && window.__ASTERISM_STEAMVR.version;
+      report.hasDirectApply =
+        !!(
+          window.__ASTERISM_STEAMVR &&
+          typeof window.__ASTERISM_STEAMVR.applyWorldTransformForSummonKey ===
+            "function"
+        );
       if (
         report.frameResolve.source === "window.Dashboard_only" ||
-        !(report.frameResolve.frames && report.frameResolve.frames.length)
+        !(report.frameResolve.count > 0)
       ) {
         report.notes.push(
           "Phase1: cannot resolve overlay→Frame via window.Dashboard alone; chunk bridge required for map read/seed"
@@ -405,6 +578,12 @@
         result = seedWorld(msg.overlay_key, msg.transform);
       else if (msg.cmd === "set-presentation")
         result = setPresentation(msg.overlay_key, msg.mode);
+      else if (msg.cmd === "direct-restore")
+        result = directRestore(msg.overlay_key, msg.transform);
+      else if (msg.cmd === "restore-via-hand")
+        result = restoreViaHand(msg.overlay_key, msg.transform);
+      else if (msg.cmd === "get-live-world")
+        result = getLiveWorld(msg.overlay_key);
       else result = { ok: false, error: "unknown cmd" };
     } catch (e) {
       result = { ok: false, error: String(e) };
@@ -521,6 +700,9 @@
           capture: captureOverlay,
           seedWorld: seedWorld,
           setPresentation: setPresentation,
+          directRestore: directRestore,
+          restoreViaHand: restoreViaHand,
+          getLiveWorld: getLiveWorld,
           list: listAsterism,
           connectWs: connectWs,
         };

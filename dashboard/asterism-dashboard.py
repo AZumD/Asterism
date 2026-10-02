@@ -373,7 +373,16 @@ _DASHMGR_WS_CLIENT: socket.socket | None = None
 _DASHMGR_WS_HELLO = False
 DASHMGR_DIR = STATE / "dashboard-state"
 PROBE_LOG = LOG_DIR / "dashmgr-probe.jsonl"
-_SUPPORTED_CMDS = ("list", "probe", "capture", "seed-world", "set-presentation")
+_SUPPORTED_CMDS = (
+    "list",
+    "probe",
+    "capture",
+    "seed-world",
+    "set-presentation",
+    "direct-restore",
+    "restore-via-hand",
+    "get-live-world",
+)
 
 
 def _dashmgr_new_id() -> str:
@@ -401,7 +410,14 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
     """Enqueue one command for the systemui WebSocket client (FIFO)."""
     if cmd not in _SUPPORTED_CMDS:
         return {"ok": False, "error": f"unsupported cmd: {cmd}"}
-    if cmd in ("capture", "seed-world", "set-presentation"):
+    if cmd in (
+        "capture",
+        "seed-world",
+        "set-presentation",
+        "direct-restore",
+        "restore-via-hand",
+        "get-live-world",
+    ):
         if not _asterism_overlay_key_ok(fields.get("overlay_key")):
             return {"ok": False, "error": "overlay_key must start with asterism.desktop"}
     cid = _dashmgr_new_id()
