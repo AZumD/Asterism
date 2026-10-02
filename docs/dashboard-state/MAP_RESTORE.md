@@ -73,3 +73,12 @@ systemctl --user restart steamvr.service asterism-dashboard.service
 ```
 
 Until applied: Phase 3–6 capture/restore not executable from this agent session.
+
+### Staged hashes (Frame `/tmp/asterism-dashmgr-patch-out`, 2026-10-02)
+
+| File | SHA256 |
+|------|--------|
+| stock chunk (live) | `4a33b035cadd9ee3c709247a20c8d6b8f983c9f62b18cb8b328e13383c04378b` |
+| staged bridged chunk | `272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9` |
+| staged systemui.html | `b28803f21ac998906f85ab36e6b0dd75ffd43b2d1ba4fc5dd46ef7bbd3d627ef` |
+| staged asterism_shell.js | `4d006bece0214a955bdcd4f363dfc45850f3934e202e49f1ffa8fd6a7faccf42` |
