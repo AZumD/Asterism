@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Queue Dashboard Manager commands for asterism_shell.js via loopback HTTP.
+# Usage:
+#   asterism-dashmgr probe
+#   asterism-dashmgr list
+#   asterism-dashmgr capture asterism.desktop.app.2
+#   asterism-dashmgr seed-world asterism.desktop.app.2 /path/to/transform.json
+#   asterism-dashmgr set-presentation asterism.desktop.app.2 world
+set -euo pipefail
+HTTP="${ASTERISM_HTTP:-http://127.0.0.1:47831}"
+cmd=${1:-}
+shift || true
+
+req() {
+  local body=$1
+  curl -fsS -X POST "$HTTP/dashmgr/request" \
+    -H 'Content-Type: application/json' \
+    -d "$body"
+}
+
+case "$cmd" in
+  probe)
+    req '{"cmd":"probe","wait":10}'
+    ;;
+  list)
+    req '{"cmd":"list","wait":10}'
+    ;;
+  capture)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'capture','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  seed-world)
+    key=${1:?overlay key}
+    file=${2:?transform json file}
+    python3 - "$key" "$file" <<'PY' | curl -fsS -X POST "$HTTP/dashmgr/request" -H 'Content-Type: application/json' -d @-
+import json,sys
+key, path = sys.argv[1], sys.argv[2]
+xf = json.load(open(path))
+# Allow full capture wrapper or bare transform
+if isinstance(xf, dict) and "world" in xf and xf["world"]:
+    xf = xf["world"]
+elif isinstance(xf, dict) and "transform" in xf:
+    xf = xf["transform"]
+elif isinstance(xf, dict) and "capture" in xf:
+    rem = (xf.get("capture") or {}).get("rememberedTransforms") or {}
+    xf = rem.get("World") or xf
+print(json.dumps({"cmd": "seed-world", "wait": 10, "overlay_key": key, "transform": xf}))
+PY
+    ;;
+  set-presentation)
+    key=${1:?overlay key}
+    mode=${2:?mode}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'set-presentation','wait':10,'overlay_key':'$key','mode':'$mode'}))")"
+    ;;
+  wait-result)
+    id=${1:?id}
+    curl -fsS "$HTTP/dashmgr/result/$id"
+    ;;
+  ""|-h|--help)
+    sed -n '2,10p' "$0"
+    exit 0
+    ;;
+  *)
+    echo "unknown command: $cmd" >&2
+    exit 2
+    ;;
+esac
+echo

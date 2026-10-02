@@ -345,6 +345,96 @@ HANDLERS: dict[str, Callable[[], dict]] = {
     "ping": lambda: {"ok": True, "action": "ping", "message": "pong"},
 }
 
+# ---- Dashboard Manager shell bridge (127.0.0.1 only; asterism.desktop* keys) ----
+_DASHMGR_LOCK = threading.Lock()
+_DASHMGR_PENDING: dict[str, Any] | None = None
+_DASHMGR_RESULTS: dict[str, Any] = {}
+_DASHMGR_SEQ = 0
+DASHMGR_DIR = STATE / "dashboard-state"
+PROBE_LOG = LOG_DIR / "dashmgr-probe.jsonl"
+
+
+def _dashmgr_new_id() -> str:
+    global _DASHMGR_SEQ
+    _DASHMGR_SEQ += 1
+    return f"dm-{int(time.time())}-{_DASHMGR_SEQ}"
+
+
+def _asterism_overlay_key_ok(key: str | None) -> bool:
+    return isinstance(key, str) and key.startswith("asterism.desktop")
+
+
+def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
+    """Queue one command for asterism_shell.js poll loop. Overwrites prior pending."""
+    if cmd not in ("list", "probe", "capture", "seed-world", "set-presentation"):
+        return {"ok": False, "error": f"unsupported cmd: {cmd}"}
+    if cmd in ("capture", "seed-world", "set-presentation"):
+        if not _asterism_overlay_key_ok(fields.get("overlay_key")):
+            return {"ok": False, "error": "overlay_key must start with asterism.desktop"}
+    cid = _dashmgr_new_id()
+    msg = {"id": cid, "cmd": cmd, **fields}
+    with _DASHMGR_LOCK:
+        _DASHMGR_PENDING = msg
+    log(f"dashmgr enqueue {cmd} id={cid}")
+    return {"ok": True, "id": cid, "queued": msg}
+
+
+def dashmgr_poll() -> dict:
+    with _DASHMGR_LOCK:
+        msg = _DASHMGR_PENDING
+        _DASHMGR_PENDING = None
+    return msg or {}
+
+
+def dashmgr_store_result(body: dict) -> dict:
+    cid = body.get("id")
+    result = body.get("result")
+    if not cid:
+        return {"ok": False, "error": "missing id"}
+    with _DASHMGR_LOCK:
+        _DASHMGR_RESULTS[str(cid)] = {
+            "ts": time.time(),
+            "result": result,
+        }
+    # Persist probe / captures under state for later copy into docs/
+    try:
+        DASHMGR_DIR.mkdir(parents=True, exist_ok=True)
+        if isinstance(result, dict) and result.get("probe"):
+            with PROBE_LOG.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"id": cid, "probe": result["probe"]}) + "\n")
+            (DASHMGR_DIR / "last-probe.json").write_text(
+                json.dumps(result["probe"], indent=2), encoding="utf-8"
+            )
+        if isinstance(result, dict) and result.get("capture"):
+            name = f"capture-{cid}.json"
+            (DASHMGR_DIR / name).write_text(json.dumps(result, indent=2), encoding="utf-8")
+            (DASHMGR_DIR / "last-capture.json").write_text(
+                json.dumps(result, indent=2), encoding="utf-8"
+            )
+    except OSError as e:
+        log(f"dashmgr persist failed: {e}")
+    log(f"dashmgr result id={cid} ok={isinstance(result, dict) and result.get('ok')}")
+    return {"ok": True}
+
+
+def dashmgr_get_result(cid: str, *, wait: float = 0.0) -> dict:
+    deadline = time.time() + max(0.0, wait)
+    while True:
+        with _DASHMGR_LOCK:
+            got = _DASHMGR_RESULTS.get(cid)
+        if got is not None:
+            return {"ok": True, "id": cid, **got}
+        if time.time() >= deadline:
+            return {"ok": False, "error": "timeout", "id": cid}
+        time.sleep(0.2)
+
+
+def dashmgr_request(cmd: str, *, wait: float = 8.0, **fields: Any) -> dict:
+    q = dashmgr_enqueue(cmd, **fields)
+    if not q.get("ok"):
+        return q
+    return dashmgr_get_result(q["id"], wait=wait)
+
 
 def on_signal(signum, _frame):
     global _shutdown
@@ -382,12 +472,27 @@ class HttpHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         log("http " + (fmt % args))
 
+    def _read_json(self) -> dict:
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0 or length > 1_000_000:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            obj = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return {}
+        return obj if isinstance(obj, dict) else {}
+
     def _send(self, code: int, obj: dict) -> None:
         body = json.dumps(obj).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        # Chromium Private Network Access (vrwebhelper enables BlockInsecurePrivateNetworkRequests)
+        self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
         self.wfile.write(body)
 
@@ -396,6 +501,7 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802
@@ -404,6 +510,11 @@ class HttpHandler(BaseHTTPRequestHandler):
             self._send(200, handle_command("status"))
         elif path == "/ping":
             self._send(200, handle_command("ping"))
+        elif path == "/dashmgr/poll":
+            self._send(200, dashmgr_poll())
+        elif path.startswith("/dashmgr/result/"):
+            cid = path.rsplit("/", 1)[-1]
+            self._send(200, dashmgr_get_result(cid, wait=0.0))
         else:
             self._send(404, {"ok": False, "error": "not found"})
 
@@ -413,10 +524,42 @@ class HttpHandler(BaseHTTPRequestHandler):
         if cmd in HANDLERS and cmd not in ("stop-desktop", "restart-desktop"):
             # Shell UI may POST /show /hide /toggle — never expose stop/restart over HTTP by default
             self._send(200, handle_command(cmd))
-        elif cmd in ("stop-desktop", "restart-desktop"):
+            return
+        if cmd in ("stop-desktop", "restart-desktop"):
             self._send(403, {"ok": False, "error": f"{cmd} not allowed over HTTP"})
-        else:
-            self._send(404, {"ok": False, "error": "not found"})
+            return
+        if cmd == "dashmgr/probe":
+            body = self._read_json()
+            # Direct probe upload from shell (not poll result)
+            DASHMGR_DIR.mkdir(parents=True, exist_ok=True)
+            try:
+                with PROBE_LOG.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps(body) + "\n")
+                (DASHMGR_DIR / "last-probe.json").write_text(
+                    json.dumps(body, indent=2), encoding="utf-8"
+                )
+            except OSError as e:
+                log(f"probe save failed: {e}")
+            log("dashmgr probe received")
+            self._send(200, {"ok": True})
+            return
+        if cmd == "dashmgr/result":
+            self._send(200, dashmgr_store_result(self._read_json()))
+            return
+        if cmd == "dashmgr/enqueue":
+            body = self._read_json()
+            c = body.get("cmd")
+            fields = {k: v for k, v in body.items() if k != "cmd"}
+            self._send(200, dashmgr_enqueue(str(c or ""), **fields))
+            return
+        if cmd == "dashmgr/request":
+            body = self._read_json()
+            c = body.get("cmd")
+            wait = float(body.get("wait") or 8.0)
+            fields = {k: v for k, v in body.items() if k not in ("cmd", "wait")}
+            self._send(200, dashmgr_request(str(c or ""), wait=wait, **fields))
+            return
+        self._send(404, {"ok": False, "error": "not found"})
 
 
 def start_http() -> ThreadingHTTPServer | None:

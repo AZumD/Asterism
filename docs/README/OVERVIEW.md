@@ -24,10 +24,13 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `pointer/helper/asterism-place.cpp` | [ASTERISM-PLACE.md](ASTERISM-PLACE.md) (**legacy** fallback) |
 | `gamescope-asterism/` + `scripts/asterism-gamescope-*.sh` | [ASTERISM-GAMESCOPE.md](ASTERISM-GAMESCOPE.md) |
 | `scripts/asterism-dashboard-inspect` | [ASTERISM-DASHBOARD-INSPECT.md](ASTERISM-DASHBOARD-INSPECT.md) |
-| `docs/OWNERSHIP_BOUNDARY.md` | OpenVR Absolute ownership gate (blocked) |
+| `scripts/asterism-dashmgr` | [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md) |
+| `scripts/patch-steamvr-dashmgr-bridge.sh` | [PATCH-STEAMVR-DASHMGR-BRIDGE.md](PATCH-STEAMVR-DASHMGR-BRIDGE.md) |
 | `docs/DASHBOARD_MANAGER.md` | SteamVR Dashboard Manager spatial model |
+| `docs/dashboard-state/MAP_RESTORE.md` | Map restore probe + Valve World-map gate |
 | `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
 | `test/test_dashboard_manager_docs.sh` | [_VERIFY_DASHBOARD_MANAGER_DOCS.md](_VERIFY_DASHBOARD_MANAGER_DOCS.md) |
+| `test/test_dashmgr_bridge_docs.sh` | [_VERIFY_DASHMGR_BRIDGE_DOCS.md](_VERIFY_DASHMGR_BRIDGE_DOCS.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |

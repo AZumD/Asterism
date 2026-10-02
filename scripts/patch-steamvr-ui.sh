@@ -112,9 +112,20 @@ echo "  SteamVR: $(steamvr_build_id)"
 echo "  target:  $HTML + $SHELL_JS_DST"
 echo
 
-# If already patched, treat as idempotent success when inject present
+# If already patched, refresh asterism_shell.js (Asterism-owned) then exit.
 if [ -f "$PATCH_MARKER" ] && grep -Fq "$MARKER" "$HTML" 2>/dev/null && [ -f "$SHELL_JS_DST" ]; then
-  echo "Already patched (idempotent)."
+  echo "Already patched — refreshing asterism_shell.js only."
+  if [ "$dry_run" = 1 ]; then
+    echo "[dry-run] would install $SHELL_JS_SRC -> $SHELL_JS_DST"
+    status
+    exit 0
+  fi
+  if [ -w "$(dirname "$SHELL_JS_DST")" ]; then
+    install -m 0644 "$SHELL_JS_SRC" "$SHELL_JS_DST"
+  else
+    sudo install -m 0644 "$SHELL_JS_SRC" "$SHELL_JS_DST"
+  fi
+  echo "asterism_shell.js sha256: $(sha "$SHELL_JS_DST")"
   status
   exit 0
 fi

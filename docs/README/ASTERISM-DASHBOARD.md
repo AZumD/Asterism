@@ -9,3 +9,13 @@ Control plane + supervisor: start desktop with SteamVR, visibility IPC/HTTP, cra
 ## Visibility vs layout
 
 `show` / `hide` / `toggle` / `focus_desktop_overlay` / steamvr-up are **visibility only**. They must not spawn `asterism-layout apply`. Layout restore is owned solely by `desktop/asterism-session.sh` when a new gamescope creates PerWindow overlays (eliminates theater→dashboard→world races).
+
+## Dashboard Manager bridge (experimental)
+
+Loopback HTTP on `127.0.0.1:47831`:
+
+- `GET /dashmgr/poll` — shell picks up one queued command
+- `POST /dashmgr/request` — enqueue+wait (`probe`/`list`/`capture`/`seed-world`/`set-presentation`)
+- `POST /dashmgr/probe` — shell uploads Phase 1 probe JSON
+
+See [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md) and [../dashboard-state/MAP_RESTORE.md](../dashboard-state/MAP_RESTORE.md).

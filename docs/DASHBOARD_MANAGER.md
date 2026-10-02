@@ -193,6 +193,11 @@ Then **one** controlled proof: capture → move → restore via the same JS sett
 
 Until that bridge exists, `asterism-dashboard-inspect` reports live pose fields as `null`.
 
+**2026-10-02 update:** Phase 1 confirmed `window.Dashboard` alone cannot resolve Frames.
+Minimal chunk bridge + `asterism_shell.js` loopback IPC are implemented; see
+[dashboard-state/MAP_RESTORE.md](dashboard-state/MAP_RESTORE.md).
+Also: Valve **ignores** `map[World]` on Dashboard→World; only hand→World consumes it.
+
 ---
 
 ## Legacy tooling
