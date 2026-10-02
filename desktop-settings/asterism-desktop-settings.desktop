@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Asterism Desktop Settings
+Comment=Asterism Linux display topology (not spatial VR placement)
+Exec=@REPO@/desktop-settings/asterism_desktop_settings.py
+Icon=preferences-desktop-display
+Categories=Settings;DesktopSettings;
+Terminal=false

@@ -1,0 +1,8 @@
+# Asterism configuration (user copy: ~/.config/asterism/asterism.conf)
+WIDTH=1280
+HEIGHT=800
+# Overlay identity (must match compatibility/manifest.json)
+OVERLAY_KEY=asterism.desktop
+OVERLAY_NAME=Desktop
+# Physical width in metres for the dashboard panel
+PHYS_WIDTH=1.2

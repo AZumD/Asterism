@@ -1,0 +1,45 @@
+{
+  "asterism_compat_version": 1,
+  "description": "Known-good SteamVR UI file hashes for Phase C patching. Phase B does not modify these files.",
+  "steamos": {
+    "build_id": "20260930.6234839",
+    "version_id": "0.4.3",
+    "variant_id": "vr"
+  },
+  "steamvr": {
+    "root": "/opt/steamvr",
+    "build_id": "1790822802",
+    "clstamp": "11065908"
+  },
+  "overlay": {
+    "key": "asterism.desktop",
+    "friendly_name": "Desktop"
+  },
+  "ui_targets": [
+    {
+      "path": "/opt/steamvr/resources/webinterface/dashboard/systemui.html",
+      "sha256": "0cf9002ead850fa1ede7c16d7eb242247a0eb585e93469f634d1d50a8931b637",
+      "role": "systemui_entry"
+    },
+    {
+      "path": "/opt/steamvr/resources/webinterface/dashboard/systemui.js",
+      "sha256": "98123dd78ba98284acda95c2ee844c93e4d59b7e135fc0cd452e631407faf7c4",
+      "role": "systemui_bundle"
+    },
+    {
+      "path": "/opt/steamvr/resources/webinterface/dashboard/chunk~2e670652e.js",
+      "sha256": "6f9e5e08d68e47631648c03afadf9a30bf78e247e28758978b6a74494ad5431e",
+      "role": "quickaccess_chunk"
+    },
+    {
+      "path": "/opt/steamvr/resources/webinterface/dashboard/chunk~8012d0c89.js",
+      "sha256": "4a33b035cadd9ee3c709247a20c8d6b8f983c9f62b18cb8b328e13383c04378b",
+      "role": "shared_dashboard_chunk"
+    }
+  ],
+  "notes": [
+    "Refuse automatic Phase C patches when live hashes differ from this manifest.",
+    "SteamVR updates replace /opt/steamvr/resources/webinterface/**.",
+    "Clear ~/.cache/SteamVR/htmlcache after any future UI patch so vrwebhelper reloads JS."
+  ]
+}

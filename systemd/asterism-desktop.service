@@ -1,0 +1,26 @@
+[Unit]
+Description=Asterism nested Linux desktop (gamescope OpenVR dashboard overlay)
+Documentation=file://@REPO@/DEVELOPMENT.md
+# Desktop is SteamVR-session infrastructure, not an on-demand app.
+BindsTo=steamvr.service
+Requisite=steamvr.service
+After=steamvr.service asterism-dashboard.service
+Before=shutdown.target
+
+[Service]
+Type=simple
+ExecStart=@REPO@/desktop/asterism-session.sh
+# SIGTERM first so gamescope can VR_Shutdown cleanly
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=45
+SendSIGKILL=yes
+# Unexpected exit while SteamVR is up: restart with rate limit
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=120
+StartLimitBurst=3
+Environment=ASTERISM_ROOT=@REPO@
+
+[Install]
+WantedBy=steamvr.service

@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""CLI for Asterism display topology (backend for Desktop Settings)."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "display"))
+sys.path.insert(0, str(ROOT))
+
+from displays import (  # noqa: E402
+    DisplayConfigError,
+    add_display,
+    apply_hint,
+    load,
+    primary,
+    remove_display,
+    save,
+    set_field,
+    set_primary,
+    validate_config,
+)
+
+
+def out(obj, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(obj, indent=2))
+    else:
+        if isinstance(obj, dict) and "displays" in obj:
+            for d in obj["displays"]:
+                flags = []
+                if d.get("primary"):
+                    flags.append("primary")
+                if not d.get("enabled", True):
+                    flags.append("disabled")
+                flag = f" [{', '.join(flags)}]" if flags else ""
+                w, h = d["resolution"]
+                print(f"{d['id']}: {w}x{h} scale={d['scale']} rot={d['rotation']}{flag}")
+        else:
+            print(json.dumps(obj, indent=2))
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Asterism display topology control")
+    ap.add_argument("--json", action="store_true", help="machine-readable JSON")
+    ap.add_argument("--path", type=Path, default=None, help="override displays.json path")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("list")
+    sub.add_parser("validate")
+    sub.add_parser("apply")
+    p_add = sub.add_parser("add")
+    p_add.add_argument("--resolution", default=None, help="WxH")
+    p_rm = sub.add_parser("remove")
+    p_rm.add_argument("id")
+    p_set = sub.add_parser("set")
+    p_set.add_argument("id")
+    p_set.add_argument("field", choices=["resolution", "scale", "rotation", "enabled"])
+    p_set.add_argument("value")
+    p_pri = sub.add_parser("set-primary")
+    p_pri.add_argument("id")
+    sub.add_parser("primary")
+
+    args = ap.parse_args()
+    path = args.path
+
+    try:
+        if args.cmd == "list":
+            cfg = load(path)
+            out(cfg, args.json)
+        elif args.cmd == "validate":
+            cfg = load(path)
+            validate_config(cfg)
+            out({"ok": True, "path": str(path or "default")}, True)
+        elif args.cmd == "add":
+            cfg = load(path)
+            res = None
+            if args.resolution:
+                from displays import _validate_resolution
+                res = _validate_resolution(args.resolution)
+            cfg = add_display(cfg, resolution=res)
+            save(cfg, path)
+            out(cfg, args.json)
+        elif args.cmd == "remove":
+            cfg = remove_display(load(path), args.id)
+            save(cfg, path)
+            out(cfg, args.json)
+        elif args.cmd == "set":
+            val: object = args.value
+            if args.field == "enabled":
+                val = args.value
+            cfg = set_field(load(path), args.id, args.field, val)
+            save(cfg, path)
+            out(cfg, args.json)
+        elif args.cmd == "set-primary":
+            cfg = set_primary(load(path), args.id)
+            save(cfg, path)
+            out(cfg, args.json)
+        elif args.cmd == "primary":
+            cfg = load(path)
+            out(primary(cfg), True)
+        elif args.cmd == "apply":
+            cfg = load(path)
+            hint = apply_hint(cfg)
+            # Stage: config already on disk; session reads it on restart
+            out({"ok": True, "staged": True, **hint}, True)
+        else:
+            ap.error("unknown command")
+    except DisplayConfigError as e:
+        print(json.dumps({"ok": False, "error": str(e)}), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

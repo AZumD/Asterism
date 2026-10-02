@@ -1,0 +1,19 @@
+[Unit]
+Description=Asterism dashboard control (IPC + SteamVR overlay orchestration)
+Documentation=file://@REPO@/DEVELOPMENT.md
+# Stop/start with SteamVR; never keep SteamVR alive.
+BindsTo=steamvr.service
+Requisite=steamvr.service
+After=steamvr.service
+
+[Service]
+Type=simple
+ExecStart=@REPO@/dashboard/asterism-dashboard.py
+Restart=on-failure
+RestartSec=3
+StartLimitIntervalSec=60
+StartLimitBurst=5
+Environment=ASTERISM_ROOT=@REPO@
+
+[Install]
+WantedBy=steamvr.service
