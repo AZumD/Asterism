@@ -31,12 +31,15 @@ sys.exit(0 if r.get('ok') or r.get('skipped') else 1)
 "
     ;;
   snapshot-all)
-    # Best-effort; used by systemd ExecStop — keep bounded
-    WS_TIMEOUT=${ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT:-12}
+    # Best-effort; systemd sets ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT=3.
+    # Interactive default stays short-but-usable (12s).
     python3 -c "
 import json, sys, os
 from spatial.restore import snapshot_all
-r = snapshot_all(wait_ws=True, ws_timeout=float(os.environ.get('ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT', '12')))
+r = snapshot_all(
+    wait_ws=True,
+    ws_timeout=float(os.environ.get('ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT', '12')),
+)
 print(json.dumps(r, indent=2))
 # ExecStop must not hang reboot: exit 0 on best-effort
 sys.exit(0)

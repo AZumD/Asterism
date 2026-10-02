@@ -29,8 +29,11 @@ PRES_ALIASES = {
     "righthand": "righthand",
     "left": "lefthand",
     "right": "righthand",
-    "boot": "dashboard",  # ignore boot as persisted presentation
+    # Boot is a transient Valve state — do not persist as dashboard/world/etc.
 }
+
+# Explicit unsupported transient presentations (normalize -> None)
+PRES_UNSUPPORTED = frozenset({"boot"})
 
 
 class SpatialStateError(Exception):
@@ -45,6 +48,8 @@ def normalize_presentation(name: Any) -> str | None:
     if name is None:
         return None
     key = str(name).strip().lower().replace(" ", "").replace("_", "")
+    if key in PRES_UNSUPPORTED:
+        return None
     # LeftHand -> lefthand
     return PRES_ALIASES.get(key)
 

@@ -328,11 +328,110 @@ def test_session_no_layout_apply_race() -> None:
     assert "asterism-spatial.service" in session
     unit = (ROOT / "systemd" / "asterism-spatial.service").read_text(encoding="utf-8")
     assert "After=steamvr.service asterism-dashboard.service asterism-desktop.service" in unit
-    assert "ExecStart=" in unit and "restore-all" in unit
+    assert "ExecStart=-" in unit and "restore-all" in unit
     assert "ExecStop=" in unit and "snapshot-all" in unit
     assert "TimeoutStopSec=20" in unit
+    assert "ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT=3" in unit
     assert "WantedBy=steamvr.service" in unit
     print("OK session/systemd ownership")
+
+
+def test_execstart_dash_keeps_oneshot_armed() -> None:
+    """ExecStart=- ensures failed restore still leaves oneshot active/exited."""
+    unit = (ROOT / "systemd" / "asterism-spatial.service").read_text(encoding="utf-8")
+    lines = [
+        ln.strip()
+        for ln in unit.splitlines()
+        if ln.strip().startswith("ExecStart=")
+    ]
+    assert len(lines) == 1
+    assert lines[0].startswith("ExecStart=-")
+    assert "restore-all" in lines[0]
+    assert "Type=oneshot" in unit
+    assert "RemainAfterExit=yes" in unit
+    print("OK ExecStart=- armed for ExecStop")
+
+
+def test_snapshot_incremental_durable() -> None:
+    """display-1 success must hit disk even if display-2 then fails."""
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "spatial-state.json"
+        set_display_world("display-1", P, path=path)
+        set_display_world("display-2", Q, path=path)
+
+        def fake_req(cmd, **kw):
+            key = kw.get("overlay_key")
+            if key == "asterism.desktop.app.2":
+                if cmd == "capture":
+                    return {
+                        "ok": True,
+                        "result": {
+                            "ok": True,
+                            "capture": {
+                                "dockLocationName": "World",
+                                "rememberedTransforms": {"World": P},
+                            },
+                            "world": P,
+                        },
+                    }
+                if cmd == "get-live-world":
+                    # New live pose for display-1
+                    return {
+                        "ok": True,
+                        "result": {
+                            "ok": True,
+                            "xfTransform": {
+                                "translation": {"x": 3.0, "y": 3.0, "z": -3.0},
+                                "rotation": P["rotation"],
+                                "scale": P["scale"],
+                            },
+                        },
+                    }
+            if key == "asterism.desktop.app.3":
+                raise RuntimeError("hang/fail display-2")
+            raise AssertionError((cmd, key))
+
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(
+                restore_mod,
+                "map_displays_to_overlays",
+                return_value=[
+                    {
+                        "display_id": "display-1",
+                        "overlay_key": "asterism.desktop.app.2",
+                    },
+                    {
+                        "display_id": "display-2",
+                        "overlay_key": "asterism.desktop.app.3",
+                    },
+                ],
+            ):
+                with mock.patch.object(
+                    restore_mod,
+                    "overlay_key_for_display",
+                    side_effect=lambda did, keys=None: {
+                        "display-1": "asterism.desktop.app.2",
+                        "display-2": "asterism.desktop.app.3",
+                    }[did],
+                ):
+                    r = restore_mod.snapshot_all(path=path, wait_ws=False)
+        assert r["results"][0].get("ok") is True
+        assert r["results"][0].get("saved") is True
+        assert r["results"][1].get("ok") is False
+        on_disk = load(path)
+        assert on_disk["displays"]["display-1"]["transforms"]["world"]["translation"]["x"] == 3.0
+        # display-2 prior Q retained
+        assert on_disk["displays"]["display-2"]["transforms"]["world"]["translation"]["x"] == 1.5
+    print("OK incremental snapshot durable")
+
+
+def test_boot_presentation_not_persisted() -> None:
+    from spatial.spatial_state import normalize_presentation
+
+    assert normalize_presentation("Boot") is None
+    assert normalize_presentation("boot") is None
+    assert normalize_presentation("World") == "world"
+    print("OK boot unsupported")
 
 
 def test_shell_seed_presentation() -> None:
@@ -399,6 +498,9 @@ def main() -> int:
     test_no_hand_on_startup_restore_all()
     test_missing_corrupt_state()
     test_session_no_layout_apply_race()
+    test_execstart_dash_keeps_oneshot_armed()
+    test_snapshot_incremental_durable()
+    test_boot_presentation_not_persisted()
     test_shell_seed_presentation()
     test_mapping_stable_ids()
     print("OK all lifecycle tests")

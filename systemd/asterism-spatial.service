@@ -14,8 +14,12 @@ Type=oneshot
 RemainAfterExit=yes
 Environment=ASTERISM_ROOT=@REPO@
 Environment=PYTHONPATH=@REPO@
+# Short WS wait inside 20s stop budget (interactive CLI default remains longer).
+Environment=ASTERISM_SPATIAL_SNAPSHOT_WS_TIMEOUT=3
 # Restore after SteamVR + shell WS + overlays are up.
-ExecStart=@REPO@/scripts/asterism-spatial restore-all
+# Leading '-' keeps oneshot active/exited even if restore fails, so ExecStop
+# (snapshot-all) stays armed. Diagnostics remain in spatial-last-restore.json.
+ExecStart=-@REPO@/scripts/asterism-spatial restore-all
 # Best-effort snapshot before systemui dies. Keep short so reboot cannot hang.
 TimeoutStartSec=180
 TimeoutStopSec=20

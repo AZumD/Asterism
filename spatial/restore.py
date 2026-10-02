@@ -265,19 +265,21 @@ def snapshot_all(
         results.append(r)
         if r.get("ok"):
             any_ok = True
-
-    if any_ok:
-        try:
-            save(working, path)
-        except Exception as e:  # noqa: BLE001
-            out = {
-                "ok": False,
-                "error": f"atomic save failed: {e}",
-                "results": results,
-                "elapsed_s": time.time() - t0,
-            }
-            _write_diag(LAST_SNAPSHOT_PATH, out)
-            return out
+            # Durable immediately — do not wait for the full loop (TimeoutStopSec).
+            try:
+                save(working, path)
+                r["saved"] = True
+            except Exception as e:  # noqa: BLE001
+                r["saved"] = False
+                r["save_error"] = str(e)
+                out = {
+                    "ok": False,
+                    "error": f"atomic save failed after {did}: {e}",
+                    "results": results,
+                    "elapsed_s": time.time() - t0,
+                }
+                _write_diag(LAST_SNAPSHOT_PATH, out)
+                return out
 
     ok = any_ok or all(r.get("skipped") for r in results)
     out = {

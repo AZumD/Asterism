@@ -44,10 +44,13 @@ asterism-spatial restore-all
 SteamVR start
   -> asterism-dashboard
   -> asterism-desktop
-  -> asterism-spatial ExecStart restore-all
+  -> asterism-spatial ExecStart=- restore-all
+     (leading '-' keeps unit active/exited even if restore fails,
+      so ExecStop stays armed; diagnostics in spatial-last-restore.json)
 
 SteamVR stop
-  -> asterism-spatial ExecStop snapshot-all (TimeoutStopSec=20, best-effort)
+  -> asterism-spatial ExecStop snapshot-all (TimeoutStopSec=20, WS wait 3s)
+     each successful display is saved atomically before the next
   -> desktop / dashboard stop
 ```
 
