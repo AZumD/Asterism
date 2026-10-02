@@ -1,21 +1,25 @@
 /**
  * Asterism shell control — injected into SteamVR systemui.
- * Visibility/focus + optional Dashboard Manager pose bridge (loopback only).
+ * Visibility/focus + Dashboard Manager pose bridge via ws://localhost (CSP-safe).
  *
  * Does not own or terminate the desktop session.
- * Pose APIs require either:
- *   - reachable Frame via window.Dashboard (Phase 1), or
- *   - window.__ASTERISM_STEAMVR from a minimal hash-gated chunk bridge (Phase 2)
+ * Pose APIs require window.__ASTERISM_STEAMVR from the hash-gated chunk bridge.
  */
 (function () {
   "use strict";
   var OVERLAY_KEY = "asterism.desktop";
   var HTTP = "http://127.0.0.1:47831";
+  // CSP connect-src allows ws://localhost:* — do NOT use 127.0.0.1 here.
+  var WS_URL = "ws://localhost:47832";
   var BTN_ID = "asterism-shell-desktop-btn";
   var DEBUG =
     true ||
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("ASTERISM_DASHMGR_DEBUG") === "1");
+
+  var ws = null;
+  var wsReconnectTimer = null;
+  var wsBackoffMs = 1000;
 
   function log() {
     try {
@@ -24,41 +28,6 @@
         ["[asterism-shell]"].concat([].slice.call(arguments))
       );
     } catch (_) {}
-  }
-
-  function postJson(path, obj) {
-    try {
-      fetch(HTTP + path, {
-        method: "POST",
-        mode: "cors",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(obj),
-      })
-        .then(function (r) {
-          return r.json().catch(function () {
-            return { ok: false, status: r.status };
-          });
-        })
-        .then(function (j) {
-          log("POST", path, j && j.ok);
-        })
-        .catch(function (e) {
-          log("POST failed", path, String(e));
-          // Fallback fire-and-forget (PNA may still block)
-          try {
-            fetch(HTTP + path, {
-              method: "POST",
-              mode: "no-cors",
-              cache: "no-store",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(obj),
-            });
-          } catch (_) {}
-        });
-    } catch (e) {
-      log("postJson error", e);
-    }
   }
 
   function httpShow() {
@@ -166,21 +135,20 @@
       return { source: "chunk_bridge", frames: frames };
     }
 
-    // Phase 1: only window.Dashboard / known globals — no React fiber crawl.
     var dash = window.Dashboard;
     if (!dash) return { source: "none", frames: [], reason: "window.Dashboard missing" };
 
-    var candidates = [];
     try {
       if (typeof dash.GetFramesWithAssociatedSummonKeys === "function") {
-        candidates = dash.GetFramesWithAssociatedSummonKeys(overlayKey) || [];
-        return { source: "Dashboard.GetFramesWithAssociatedSummonKeys", frames: candidates };
+        return {
+          source: "Dashboard.GetFramesWithAssociatedSummonKeys",
+          frames: dash.GetFramesWithAssociatedSummonKeys(overlayKey) || [],
+        };
       }
     } catch (e) {
       log("Dashboard.GetFrames… failed", e);
     }
 
-    // Legacy store / action store: name-only reachability (no deep walk)
     return {
       source: "window.Dashboard_only",
       frames: [],
@@ -208,12 +176,11 @@
           if (xf) remembered[ywqName(loc)] = cloneTransform(xf);
         } catch (_) {}
       }
-      // Also dump whatever keys exist if Map iterable
       try {
         if (typeof map.forEach === "function") {
-          map.forEach(function (xf, loc) {
-            var name = ywqName(loc);
-            if (!remembered[name]) remembered[name] = cloneTransform(xf);
+          map.forEach(function (xf2, loc2) {
+            var name = ywqName(loc2);
+            if (!remembered[name]) remembered[name] = cloneTransform(xf2);
           });
         }
       } catch (_) {}
@@ -288,7 +255,6 @@
     }
     var plain = cloneTransform(transform);
     if (!plain) return { ok: false, error: "bad transform" };
-    // Valve stores live transform objects; seed a plain deep copy.
     map.set(e.World, plain);
     return {
       ok: true,
@@ -327,7 +293,6 @@
         return { ok: false, error: String(err) };
       }
     }
-    // Fallback: Dashboard mailbox handler (presentation only; no pose)
     try {
       var dash = window.Dashboard;
       if (dash && typeof dash.onVrCmdDockOverlayRequested === "function") {
@@ -358,7 +323,6 @@
         log("listAsterismFrames failed", e);
       }
     }
-    // Without bridge, try known PerWindow keys via capture attempts
     var keys = [];
     for (var i = 0; i < 8; i++) keys.push("asterism.desktop.app." + i);
     keys.unshift("asterism.desktop");
@@ -379,6 +343,8 @@
       actionStore: safeNames(window.dashboardActionStore),
       globalActionsKeys: null,
       frameResolve: null,
+      transport: "websocket",
+      wsUrl: WS_URL,
       notes: [],
     };
     try {
@@ -415,61 +381,98 @@
           "Phase1: cannot resolve overlay→Frame via window.Dashboard alone; chunk bridge required for map read/seed"
         );
       } else {
-        report.notes.push("Phase1: Frame resolve SUCCEEDED without chunk patch");
+        report.notes.push("Frame resolve via " + report.frameResolve.source);
       }
     } else {
       report.notes.push("window.Dashboard not set yet");
     }
 
-    // Static analysis note (from Valve setInitialTransformForLocation):
     report.notes.push(
       "Valve World map is consumed only when previous dock was LeftHand/RightHand; Dashboard→World uses requestSGTransform and ignores map[World]"
     );
 
     log("probe", report.notes.join(" | "));
-    postJson("/dashmgr/probe", report);
     return report;
   }
 
-  // ---- command poll loop (loopback Asterism service) ----
-  var pollBusy = false;
-  function pollCommands() {
-    if (pollBusy) return;
-    pollBusy = true;
-    fetch(HTTP + "/dashmgr/poll", {
-      method: "GET",
-      mode: "cors",
-      cache: "no-store",
-    })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (msg) {
-        if (!msg || !msg.cmd) return;
-        var result;
-        try {
-          if (msg.cmd === "list") result = { ok: true, frames: listAsterism() };
-          else if (msg.cmd === "probe") result = { ok: true, probe: runDashboardProbe() };
-          else if (msg.cmd === "capture") result = captureOverlay(msg.overlay_key);
-          else if (msg.cmd === "seed-world")
-            result = seedWorld(msg.overlay_key, msg.transform);
-          else if (msg.cmd === "set-presentation")
-            result = setPresentation(msg.overlay_key, msg.mode);
-          else result = { ok: false, error: "unknown cmd" };
-        } catch (e) {
-          result = { ok: false, error: String(e) };
-        }
-        postJson("/dashmgr/result", {
-          id: msg.id,
-          result: result,
-        });
-      })
-      .catch(function () {
-        /* service down / PNA — silent */
-      })
-      .finally(function () {
-        pollBusy = false;
-      });
+  function handleCommand(msg) {
+    var result;
+    try {
+      if (msg.cmd === "list") result = { ok: true, frames: listAsterism() };
+      else if (msg.cmd === "probe") result = { ok: true, probe: runDashboardProbe() };
+      else if (msg.cmd === "capture") result = captureOverlay(msg.overlay_key);
+      else if (msg.cmd === "seed-world")
+        result = seedWorld(msg.overlay_key, msg.transform);
+      else if (msg.cmd === "set-presentation")
+        result = setPresentation(msg.overlay_key, msg.mode);
+      else result = { ok: false, error: "unknown cmd" };
+    } catch (e) {
+      result = { ok: false, error: String(e) };
+    }
+    return result;
+  }
+
+  function wsSend(obj) {
+    if (!ws || ws.readyState !== 1) return false;
+    try {
+      ws.send(JSON.stringify(obj));
+      return true;
+    } catch (e) {
+      log("ws send failed", e);
+      return false;
+    }
+  }
+
+  function scheduleReconnect() {
+    if (wsReconnectTimer) return;
+    var delay = wsBackoffMs;
+    wsReconnectTimer = setTimeout(function () {
+      wsReconnectTimer = null;
+      connectWs();
+    }, delay);
+    wsBackoffMs = Math.min(5000, Math.floor(wsBackoffMs * 1.5));
+  }
+
+  function connectWs() {
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch (e) {
+      log("WebSocket construct failed", e);
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = function () {
+      wsBackoffMs = 1000;
+      log("WebSocket connected", WS_URL);
+      wsSend({ type: "hello", client: "systemui", version: 1 });
+    };
+    ws.onmessage = function (ev) {
+      var msg;
+      try {
+        msg = JSON.parse(ev.data);
+      } catch (_) {
+        return;
+      }
+      if (!msg || typeof msg !== "object") return;
+      if (msg.type === "pong") return;
+      if (msg.type === "ping") {
+        wsSend({ type: "pong" });
+        return;
+      }
+      if (msg.type === "command" && msg.cmd) {
+        var result = handleCommand(msg);
+        wsSend({ type: "result", id: msg.id, result: result });
+      }
+    };
+    ws.onclose = function () {
+      log("WebSocket closed; reconnecting");
+      ws = null;
+      scheduleReconnect();
+    };
+    ws.onerror = function () {
+      // onclose will follow; avoid noisy CSP spam logs
+    };
   }
 
   function inject() {
@@ -507,21 +510,21 @@
     log("Desktop shell control injected");
   }
 
-  function waitDashboardThenProbe() {
+  function waitDashboardThenExpose() {
     var tries = 0;
     var t = setInterval(function () {
       tries++;
       if (window.Dashboard || tries > 60) {
         clearInterval(t);
-        if (DEBUG) runDashboardProbe();
-        // Expose narrow control surface for manual headset console if needed
         window.__ASTERISM_SHELL = {
           probe: runDashboardProbe,
           capture: captureOverlay,
           seedWorld: seedWorld,
           setPresentation: setPresentation,
           list: listAsterism,
+          connectWs: connectWs,
         };
+        if (DEBUG) log("Dashboard ready; WS bridge armed");
       }
     }, 500);
   }
@@ -534,8 +537,8 @@
     if (document.body) {
       obs.observe(document.body, { childList: true, subtree: false });
     }
-    waitDashboardThenProbe();
-    setInterval(pollCommands, 750);
+    waitDashboardThenExpose();
+    connectWs();
   }
 
   if (document.readyState === "loading") {

@@ -12,16 +12,13 @@ Control plane + supervisor: start desktop with SteamVR, visibility IPC/HTTP, cra
 
 ## Dashboard Manager bridge (experimental)
 
-Loopback HTTP on `127.0.0.1:47831`:
+Loopback:
 
-- `GET /dashmgr/poll` — shell picks up one queued command
-- `POST /dashmgr/enqueue` — queue a command (returns id)
-- `POST /dashmgr/request` — enqueue+wait (`probe`/`list`/`capture`/`seed-world`/`set-presentation`)
-- `POST /dashmgr/result` — shell posts command result
-- `GET /dashmgr/result/<id>` — fetch stored result
-- `POST /dashmgr/probe` — shell uploads Phase 1 probe JSON
+- HTTP `127.0.0.1:47831` — CLI/debug (`/dashmgr/enqueue`, `/dashmgr/request`, `/status`)
+- WebSocket `ws://localhost:47832` (bound `127.0.0.1`) — systemui shell (CSP allows `ws://localhost:*`)
 
-Queue state uses module globals `_DASHMGR_PENDING` / `_DASHMGR_RESULTS` (must be declared
-`global` where assigned). Covered by `test/test_dashmgr_queue.py`.
+Internal FIFO queue (`collections.deque`). CLI enqueues over HTTP; systemui consumes over WebSocket.
 
-See [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md) and [../dashboard-state/MAP_RESTORE.md](../dashboard-state/MAP_RESTORE.md).
+Queue helpers declare module state correctly; covered by `test/test_dashmgr_queue.py`.
+
+See [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md), [ASTERISM_WS.md](ASTERISM_WS.md), [../dashboard-state/MAP_RESTORE.md](../dashboard-state/MAP_RESTORE.md).

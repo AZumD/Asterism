@@ -17,9 +17,21 @@ import subprocess
 import sys
 import threading
 import time
+from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable
+
+_DASH_DIR = Path(__file__).resolve().parent
+if str(_DASH_DIR) not in sys.path:
+    sys.path.insert(0, str(_DASH_DIR))
+from asterism_ws import (  # noqa: E402
+    parse_http_upgrade,
+    ws_handshake_response,
+    ws_recv_text,
+    ws_send_close,
+    ws_send_text,
+)
 
 ROOT = Path(os.environ.get("ASTERISM_ROOT", Path(__file__).resolve().parents[1]))
 STATE = Path(os.environ.get("ASTERISM_STATE_DIR", Path.home() / ".local/state/asterism"))
@@ -33,6 +45,8 @@ RUNTIME = Path(
 SOCK = Path(os.environ.get("ASTERISM_IPC_SOCK", RUNTIME / "control.sock"))
 HTTP_HOST = os.environ.get("ASTERISM_HTTP_HOST", "127.0.0.1")
 HTTP_PORT = int(os.environ.get("ASTERISM_HTTP_PORT", "47831"))
+WS_HOST = os.environ.get("ASTERISM_WS_HOST", "127.0.0.1")
+WS_PORT = int(os.environ.get("ASTERISM_WS_PORT", "47832"))
 STEAMVR = Path(os.environ.get("STEAMVR_ROOT", "/opt/steamvr"))
 VRCMD = Path(os.environ.get("VRCMD", STEAMVR / "bin/linuxarm64/vrcmd"))
 OVERLAY_KEY = "asterism.desktop"
@@ -308,6 +322,9 @@ def _status_fields() -> dict[str, Any]:
         "gamescope_running": gamescope_running(),
         "socket": str(SOCK),
         "http": f"http://{HTTP_HOST}:{HTTP_PORT}",
+        "websocket": f"ws://localhost:{WS_PORT}",
+        "dashmgr_ws_connected": dashmgr_ws_connected(),
+        "dashmgr_queue_len": dashmgr_queue_len(),
     }
 
 
@@ -345,13 +362,18 @@ HANDLERS: dict[str, Callable[[], dict]] = {
     "ping": lambda: {"ok": True, "action": "ping", "message": "pong"},
 }
 
-# ---- Dashboard Manager shell bridge (127.0.0.1 only; asterism.desktop* keys) ----
+# ---- Dashboard Manager shell bridge (loopback only; asterism.desktop* keys) ----
+# HTTP :47831 for CLI/debug. WebSocket :47832 for systemui (CSP allows ws://localhost:*)
 _DASHMGR_LOCK = threading.Lock()
-_DASHMGR_PENDING: dict[str, Any] | None = None
+_DASHMGR_COND = threading.Condition(_DASHMGR_LOCK)
+_DASHMGR_QUEUE: deque[dict[str, Any]] = deque()
 _DASHMGR_RESULTS: dict[str, Any] = {}
 _DASHMGR_SEQ = 0
+_DASHMGR_WS_CLIENT: socket.socket | None = None
+_DASHMGR_WS_HELLO = False
 DASHMGR_DIR = STATE / "dashboard-state"
 PROBE_LOG = LOG_DIR / "dashmgr-probe.jsonl"
+_SUPPORTED_CMDS = ("list", "probe", "capture", "seed-world", "set-presentation")
 
 
 def _dashmgr_new_id() -> str:
@@ -364,28 +386,49 @@ def _asterism_overlay_key_ok(key: str | None) -> bool:
     return isinstance(key, str) and key.startswith("asterism.desktop")
 
 
+def dashmgr_reset_for_tests() -> None:
+    """Clear queue/results/client state (unit tests only)."""
+    global _DASHMGR_WS_CLIENT, _DASHMGR_WS_HELLO
+    with _DASHMGR_COND:
+        _DASHMGR_QUEUE.clear()
+        _DASHMGR_RESULTS.clear()
+        _DASHMGR_WS_CLIENT = None
+        _DASHMGR_WS_HELLO = False
+        _DASHMGR_COND.notify_all()
+
+
 def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
-    """Queue one command for asterism_shell.js poll loop. Overwrites prior pending."""
-    global _DASHMGR_PENDING
-    if cmd not in ("list", "probe", "capture", "seed-world", "set-presentation"):
+    """Enqueue one command for the systemui WebSocket client (FIFO)."""
+    if cmd not in _SUPPORTED_CMDS:
         return {"ok": False, "error": f"unsupported cmd: {cmd}"}
     if cmd in ("capture", "seed-world", "set-presentation"):
         if not _asterism_overlay_key_ok(fields.get("overlay_key")):
             return {"ok": False, "error": "overlay_key must start with asterism.desktop"}
     cid = _dashmgr_new_id()
     msg = {"id": cid, "cmd": cmd, **fields}
-    with _DASHMGR_LOCK:
-        _DASHMGR_PENDING = msg
-    log(f"dashmgr enqueue {cmd} id={cid}")
+    with _DASHMGR_COND:
+        _DASHMGR_QUEUE.append(msg)
+        _DASHMGR_COND.notify_all()
+    log(f"dashmgr enqueue {cmd} id={cid} qlen={len(_DASHMGR_QUEUE)}")
     return {"ok": True, "id": cid, "queued": msg}
 
 
 def dashmgr_poll() -> dict:
-    global _DASHMGR_PENDING
+    """Pop one queued command (HTTP debug / tests). Prefer WebSocket in production."""
+    with _DASHMGR_COND:
+        if not _DASHMGR_QUEUE:
+            return {}
+        return _DASHMGR_QUEUE.popleft()
+
+
+def dashmgr_queue_len() -> int:
     with _DASHMGR_LOCK:
-        msg = _DASHMGR_PENDING
-        _DASHMGR_PENDING = None
-    return msg or {}
+        return len(_DASHMGR_QUEUE)
+
+
+def dashmgr_ws_connected() -> bool:
+    with _DASHMGR_LOCK:
+        return _DASHMGR_WS_CLIENT is not None and _DASHMGR_WS_HELLO
 
 
 def dashmgr_store_result(body: dict) -> dict:
@@ -393,12 +436,12 @@ def dashmgr_store_result(body: dict) -> dict:
     result = body.get("result")
     if not cid:
         return {"ok": False, "error": "missing id"}
-    with _DASHMGR_LOCK:
+    with _DASHMGR_COND:
         _DASHMGR_RESULTS[str(cid)] = {
             "ts": time.time(),
             "result": result,
         }
-    # Persist probe / captures under state for later copy into docs/
+        _DASHMGR_COND.notify_all()
     try:
         DASHMGR_DIR.mkdir(parents=True, exist_ok=True)
         if isinstance(result, dict) and result.get("probe"):
@@ -422,13 +465,14 @@ def dashmgr_store_result(body: dict) -> dict:
 def dashmgr_get_result(cid: str, *, wait: float = 0.0) -> dict:
     deadline = time.time() + max(0.0, wait)
     while True:
-        with _DASHMGR_LOCK:
+        with _DASHMGR_COND:
             got = _DASHMGR_RESULTS.get(cid)
-        if got is not None:
-            return {"ok": True, "id": cid, **got}
-        if time.time() >= deadline:
-            return {"ok": False, "error": "timeout", "id": cid}
-        time.sleep(0.2)
+            if got is not None:
+                return {"ok": True, "id": cid, **got}
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                return {"ok": False, "error": "timeout", "id": cid}
+            _DASHMGR_COND.wait(timeout=min(0.5, remaining))
 
 
 def dashmgr_request(cmd: str, *, wait: float = 8.0, **fields: Any) -> dict:
@@ -436,6 +480,172 @@ def dashmgr_request(cmd: str, *, wait: float = 8.0, **fields: Any) -> dict:
     if not q.get("ok"):
         return q
     return dashmgr_get_result(q["id"], wait=wait)
+
+
+def _dashmgr_handle_ws_message(raw: str) -> None:
+    global _DASHMGR_WS_HELLO
+    try:
+        msg = json.loads(raw)
+    except json.JSONDecodeError:
+        log("dashmgr ws: bad json")
+        return
+    if not isinstance(msg, dict):
+        return
+    mtype = msg.get("type")
+    if mtype == "hello":
+        with _DASHMGR_COND:
+            _DASHMGR_WS_HELLO = True
+            _DASHMGR_COND.notify_all()
+        log(
+            f"dashmgr ws hello client={msg.get('client')} version={msg.get('version')}"
+        )
+        return
+    if mtype == "ping":
+        with _DASHMGR_LOCK:
+            sock = _DASHMGR_WS_CLIENT
+        if sock:
+            try:
+                ws_send_text(sock, json.dumps({"type": "pong"}))
+            except OSError:
+                pass
+        return
+    if mtype == "result":
+        dashmgr_store_result({"id": msg.get("id"), "result": msg.get("result")})
+        return
+    log(f"dashmgr ws: unknown type {mtype!r}")
+
+
+def _dashmgr_ws_reader(sock: socket.socket) -> None:
+    global _DASHMGR_WS_CLIENT, _DASHMGR_WS_HELLO
+    try:
+        while True:
+            text = ws_recv_text(sock)
+            if text is None:
+                break
+            _dashmgr_handle_ws_message(text)
+    except (OSError, ConnectionError, ValueError) as e:
+        log(f"dashmgr ws reader end: {e}")
+    finally:
+        with _DASHMGR_COND:
+            if _DASHMGR_WS_CLIENT is sock:
+                _DASHMGR_WS_CLIENT = None
+                _DASHMGR_WS_HELLO = False
+                _DASHMGR_COND.notify_all()
+        try:
+            sock.close()
+        except OSError:
+            pass
+        log("dashmgr ws client disconnected")
+
+
+def _dashmgr_ws_dispatcher() -> None:
+    """Send queued commands to the connected systemui WebSocket client."""
+    global _DASHMGR_WS_CLIENT, _DASHMGR_WS_HELLO
+    while not _shutdown:
+        with _DASHMGR_COND:
+            while (
+                not _shutdown
+                and (
+                    not _DASHMGR_QUEUE
+                    or _DASHMGR_WS_CLIENT is None
+                    or not _DASHMGR_WS_HELLO
+                )
+            ):
+                _DASHMGR_COND.wait(timeout=0.5)
+            if _shutdown:
+                return
+            if not _DASHMGR_QUEUE or _DASHMGR_WS_CLIENT is None or not _DASHMGR_WS_HELLO:
+                continue
+            msg = _DASHMGR_QUEUE.popleft()
+            sock = _DASHMGR_WS_CLIENT
+        frame = {"type": "command", **msg}
+        try:
+            ws_send_text(sock, json.dumps(frame))
+            log(f"dashmgr ws sent cmd={msg.get('cmd')} id={msg.get('id')}")
+        except OSError as e:
+            log(f"dashmgr ws send failed: {e}; re-queue")
+            with _DASHMGR_COND:
+                _DASHMGR_QUEUE.appendleft(msg)
+                if _DASHMGR_WS_CLIENT is sock:
+                    _DASHMGR_WS_CLIENT = None
+                    _DASHMGR_WS_HELLO = False
+                _DASHMGR_COND.notify_all()
+            time.sleep(0.2)
+
+
+def _dashmgr_ws_accept_loop(listen_sock: socket.socket) -> None:
+    global _DASHMGR_WS_CLIENT, _DASHMGR_WS_HELLO
+    while not _shutdown:
+        try:
+            listen_sock.settimeout(1.0)
+            conn, addr = listen_sock.accept()
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+        try:
+            conn.settimeout(10.0)
+            req = b""
+            while b"\r\n\r\n" not in req and len(req) < 8192:
+                chunk = conn.recv(1024)
+                if not chunk:
+                    raise ConnectionError("empty upgrade")
+                req += chunk
+            key = parse_http_upgrade(req)
+            if not key:
+                conn.sendall(b"HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n")
+                conn.close()
+                continue
+            conn.sendall(ws_handshake_response(key))
+            conn.settimeout(None)
+            with _DASHMGR_COND:
+                old = _DASHMGR_WS_CLIENT
+                _DASHMGR_WS_CLIENT = conn
+                _DASHMGR_WS_HELLO = False
+                _DASHMGR_COND.notify_all()
+            if old and old is not conn:
+                ws_send_close(old)
+                try:
+                    old.close()
+                except OSError:
+                    pass
+            log(f"dashmgr ws accepted from {addr}")
+            threading.Thread(
+                target=_dashmgr_ws_reader,
+                args=(conn,),
+                name="asterism-ws-reader",
+                daemon=True,
+            ).start()
+        except (OSError, ConnectionError, ValueError) as e:
+            log(f"dashmgr ws accept error: {e}")
+            try:
+                conn.close()
+            except OSError:
+                pass
+
+
+def start_websocket() -> socket.socket | None:
+    try:
+        listen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listen.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listen.bind((WS_HOST, WS_PORT))
+        listen.listen(2)
+    except OSError as e:
+        log(f"WebSocket listen failed on {WS_HOST}:{WS_PORT}: {e}")
+        return None
+    threading.Thread(
+        target=_dashmgr_ws_accept_loop,
+        args=(listen,),
+        name="asterism-ws-accept",
+        daemon=True,
+    ).start()
+    threading.Thread(
+        target=_dashmgr_ws_dispatcher,
+        name="asterism-ws-dispatch",
+        daemon=True,
+    ).start()
+    log(f"WebSocket bridge on ws://localhost:{WS_PORT} (bound {WS_HOST})")
+    return listen
 
 
 def on_signal(signum, _frame):
@@ -611,6 +821,7 @@ def main() -> int:
         SOCK.unlink()
     log(f"asterism-dashboard starting; socket={SOCK}")
     http = start_http()
+    wss = start_websocket()
 
     if steamvr_alive():
         _steamvr_was_alive = True
@@ -646,6 +857,11 @@ def main() -> int:
         pass
     if http:
         http.shutdown()
+    if wss:
+        try:
+            wss.close()
+        except OSError:
+            pass
     if SOCK.exists():
         SOCK.unlink()
     return 0

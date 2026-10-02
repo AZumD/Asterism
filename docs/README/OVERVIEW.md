@@ -16,6 +16,7 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `scripts/asterism-displayctl` | [ASTERISM-DISPLAYCTL.md](ASTERISM-DISPLAYCTL.md) |
 | `install.sh` | [INSTALL.md](INSTALL.md) |
 | `dashboard/asterism-dashboard.py` | [ASTERISM-DASHBOARD.md](ASTERISM-DASHBOARD.md) |
+| `dashboard/asterism_ws.py` | [ASTERISM_WS.md](ASTERISM_WS.md) |
 | `desktop/asterism-session.sh` | [ASTERISM-SESSION.md](ASTERISM-SESSION.md) |
 | `display/displays.py` | [DISPLAYS.md](DISPLAYS.md) |
 | `layout/layout.py` | [LAYOUT.md](LAYOUT.md) |
