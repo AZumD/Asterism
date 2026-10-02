@@ -293,6 +293,40 @@ def snapshot_all(
     return out
 
 
+def _http_action(http: str, action: str) -> dict[str, Any]:
+    """POST /show or /hide on asterism-dashboard (visibility/materialization)."""
+    try:
+        return _post_json(f"{http.rstrip('/')}/{action}", {}, timeout=5.0)
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
+        return {"ok": False, "error": str(e)}
+
+
+def _wait_presentation(
+    overlay_key: str,
+    want: str,
+    *,
+    http: str,
+    timeout: float = 8.0,
+) -> dict[str, Any]:
+    deadline = time.time() + timeout
+    last: dict[str, Any] = {}
+    while time.time() < deadline:
+        try:
+            cap = _result(
+                dashmgr_request("capture", http=http, overlay_key=overlay_key, wait=6.0)
+            )
+            got = normalize_presentation(
+                (cap.get("capture") or {}).get("dockLocationName")
+            )
+            last = {"ok": cap.get("ok"), "dockLocationName": got}
+            if got == want:
+                return {"ok": True, "presentation": got, "last": last}
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = {"error": str(e)}
+        time.sleep(0.25)
+    return {"ok": False, "error": f"timeout waiting for {want}", "last": last}
+
+
 def _wait_world_ready(
     overlay_key: str,
     *,
@@ -329,6 +363,187 @@ def _wait_world_ready(
             last["error"] = str(e)
         time.sleep(0.4)
     return {"ok": False, "ready": False, "last": last, "error": "timeout waiting for World+UO"}
+
+
+def _restore_world(
+    overlay_key: str,
+    entry: dict[str, Any],
+    *,
+    http: str,
+    allow_hand_fallback: bool = False,
+) -> dict[str, Any]:
+    """World restore via Dashboard materialization then fiber direct-restore.
+
+    Valve mounts UndockedOverlay only after a real Dashboard→World transition
+    while the dashboard is shown. map[World] alone is not enough.
+    """
+    out: dict[str, Any] = {
+        "overlay_key": overlay_key,
+        "saved_presentation": "world",
+        "path": "world-materialization",
+        "materialization": {},
+    }
+    mat: dict[str, Any] = out["materialization"]
+    showed = False
+    world_xf = get_transform(entry, "world")
+
+    def _cleanup_hide() -> None:
+        if not showed:
+            return
+        hide = _http_action(http, "hide")
+        mat["hide"] = {"ok": hide.get("ok"), "error": hide.get("error")}
+
+    # 1) Seed remembered World map when we have a transform
+    if world_xf:
+        try:
+            seed = _result(
+                dashmgr_request(
+                    "seed-presentation-transform",
+                    http=http,
+                    overlay_key=overlay_key,
+                    presentation="world",
+                    transform=world_xf,
+                    wait=10.0,
+                )
+            )
+            out["seed"] = {"ok": seed.get("ok"), "error": seed.get("error")}
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            out["seed"] = {"ok": False, "error": str(e)}
+
+    # 2–3) WORLD MATERIALIZATION: Dashboard + show
+    try:
+        dash = _result(
+            dashmgr_request(
+                "set-presentation",
+                http=http,
+                overlay_key=overlay_key,
+                mode="dashboard",
+                wait=12.0,
+            )
+        )
+        mat["dashboard"] = {
+            "ok": dash.get("ok"),
+            "path": dash.get("path"),
+            "error": dash.get("error"),
+        }
+        if not dash.get("ok"):
+            out["ok"] = False
+            out["error"] = dash.get("error") or "materialization set-dashboard failed"
+            return out
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        out["ok"] = False
+        out["error"] = str(e)
+        mat["dashboard"] = {"ok": False, "error": str(e)}
+        return out
+
+    show = _http_action(http, "show")
+    mat["show"] = {"ok": show.get("ok"), "error": show.get("error")}
+    showed = True
+    # Brief wait so dashboard scene is active (optional observability)
+    mat["dashboard_ready"] = _wait_presentation(
+        overlay_key, "dashboard", http=http, timeout=5.0
+    )
+    time.sleep(0.5)
+
+    # 4) Transition to World (mounts UndockedOverlay)
+    try:
+        world_set = _result(
+            dashmgr_request(
+                "set-presentation",
+                http=http,
+                overlay_key=overlay_key,
+                mode="world",
+                wait=12.0,
+            )
+        )
+        mat["world"] = {
+            "ok": world_set.get("ok"),
+            "path": world_set.get("path"),
+            "error": world_set.get("error"),
+        }
+        if not world_set.get("ok"):
+            out["ok"] = False
+            out["error"] = world_set.get("error") or "materialization set-world failed"
+            _cleanup_hide()
+            return out
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        out["ok"] = False
+        out["error"] = str(e)
+        mat["world"] = {"ok": False, "error": str(e)}
+        _cleanup_hide()
+        return out
+
+    # 5) Wait for World + live UndockedOverlay
+    ready = _wait_world_ready(overlay_key, http=http)
+    mat["live_ready"] = bool(ready.get("ok"))
+    mat["live_wait"] = {
+        "ok": ready.get("ok"),
+        "error": ready.get("error"),
+        "last": ready.get("last"),
+    }
+    if not ready.get("ok"):
+        if allow_hand_fallback and world_xf:
+            try:
+                hand = _result(
+                    dashmgr_request(
+                        "restore-via-hand",
+                        http=http,
+                        overlay_key=overlay_key,
+                        transform=world_xf,
+                        wait=20.0,
+                    )
+                )
+                out["hand"] = hand
+                out["ok"] = bool(hand.get("ok"))
+                out["path"] = "restore-via-hand"
+                if not out["ok"]:
+                    out["error"] = hand.get("error") or "hand fallback failed"
+            except (urllib.error.URLError, TimeoutError, OSError) as e:
+                out["ok"] = False
+                out["error"] = str(e)
+                out["path"] = "restore-via-hand"
+            _cleanup_hide()
+            return out
+        out["ok"] = False
+        out["error"] = ready.get("error") or "World live instance not ready"
+        _cleanup_hide()
+        return out
+
+    # 6) Direct restore when we have a saved World transform
+    if not world_xf:
+        out["ok"] = True
+        out["note"] = "no saved world transform; materialization only"
+        _cleanup_hide()
+        return out
+
+    try:
+        direct = _result(
+            dashmgr_request(
+                "direct-restore",
+                http=http,
+                overlay_key=overlay_key,
+                transform=world_xf,
+                wait=15.0,
+            )
+        )
+        out["direct"] = {
+            "ok": direct.get("ok"),
+            "path": direct.get("path"),
+            "error": direct.get("error"),
+            "liveInstanceFound": direct.get("liveInstanceFound"),
+        }
+        out["ok"] = bool(direct.get("ok"))
+        if out["ok"]:
+            out["path"] = "world-materialization+direct-restore"
+        else:
+            out["error"] = direct.get("error") or "direct-restore failed"
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        out["ok"] = False
+        out["error"] = str(e)
+
+    # 7) Hide dashboard after successful or failed attempt (best-effort)
+    _cleanup_hide()
+    return out
 
 
 def restore_display(
@@ -370,7 +585,15 @@ def restore_display(
         out["reason"] = "unsupported presentation"
         return out
 
-    # Seed remembered map for this presentation when we have a transform
+    # World needs Dashboard materialization — separate path.
+    if presentation == "world":
+        world_out = _restore_world(
+            key, entry, http=http, allow_hand_fallback=allow_hand_fallback
+        )
+        world_out["display_id"] = display_id
+        return world_out
+
+    # Dashboard / Theater: seed (if any) + direct set-presentation. No materialization.
     xf = get_transform(entry, presentation)
     if xf:
         try:
@@ -388,7 +611,6 @@ def restore_display(
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             out["seed"] = {"ok": False, "error": str(e)}
 
-    # Set presentation (no theater->dashboard->world dance)
     try:
         setp = _result(
             dashmgr_request(
@@ -413,90 +635,21 @@ def restore_display(
         out["error"] = str(e)
         return out
 
-    if presentation != "world":
-        # Validate capture reports expected presentation
-        try:
-            cap = _result(
-                dashmgr_request("capture", http=http, overlay_key=key, wait=8.0)
-            )
-            got = normalize_presentation(
-                (cap.get("capture") or {}).get("dockLocationName")
-            )
-            out["capture_presentation"] = got
-            out["ok"] = got == presentation
-            if not out["ok"]:
-                out["error"] = f"expected {presentation}, got {got}"
-            out["path"] = f"set-presentation:{presentation}"
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
-            out["ok"] = False
-            out["error"] = str(e)
-        return out
-
-    # World: wait for live UO then direct-restore
-    world_xf = get_transform(entry, "world")
-    if not world_xf:
-        out["ok"] = True
-        out["path"] = "set-presentation:world"
-        out["note"] = "no saved world transform; presentation only"
-        return out
-
-    ready = _wait_world_ready(key, http=http)
-    out["wait_world"] = {
-        "ok": ready.get("ok"),
-        "error": ready.get("error"),
-        "last": ready.get("last"),
-    }
-    if not ready.get("ok"):
-        if allow_hand_fallback:
-            try:
-                hand = _result(
-                    dashmgr_request(
-                        "restore-via-hand",
-                        http=http,
-                        overlay_key=key,
-                        transform=world_xf,
-                        wait=20.0,
-                    )
-                )
-                out["hand"] = hand
-                out["ok"] = bool(hand.get("ok"))
-                out["path"] = "restore-via-hand"
-                if not out["ok"]:
-                    out["error"] = hand.get("error") or "hand fallback failed"
-            except (urllib.error.URLError, TimeoutError, OSError) as e:
-                out["ok"] = False
-                out["error"] = str(e)
-                out["path"] = "restore-via-hand"
-            return out
-        out["ok"] = False
-        out["error"] = ready.get("error") or "World live instance not ready"
-        out["path"] = "set-presentation:world"
-        return out
-
     try:
-        direct = _result(
-            dashmgr_request(
-                "direct-restore",
-                http=http,
-                overlay_key=key,
-                transform=world_xf,
-                wait=15.0,
-            )
+        cap = _result(
+            dashmgr_request("capture", http=http, overlay_key=key, wait=8.0)
         )
-        out["direct"] = {
-            "ok": direct.get("ok"),
-            "path": direct.get("path"),
-            "error": direct.get("error"),
-            "liveInstanceFound": direct.get("liveInstanceFound"),
-        }
-        out["ok"] = bool(direct.get("ok"))
-        out["path"] = direct.get("path") or "react-fiber-setState+map"
+        got = normalize_presentation(
+            (cap.get("capture") or {}).get("dockLocationName")
+        )
+        out["capture_presentation"] = got
+        out["ok"] = got == presentation
         if not out["ok"]:
-            out["error"] = direct.get("error") or "direct-restore failed"
+            out["error"] = f"expected {presentation}, got {got}"
+        out["path"] = f"set-presentation:{presentation}"
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         out["ok"] = False
         out["error"] = str(e)
-        out["path"] = "direct-restore"
     return out
 
 

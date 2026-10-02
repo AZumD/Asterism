@@ -8,7 +8,9 @@ Orchestrate capture/restore of presentation + World poses for stable display IDs
 
 - Wait for WebSocket shell bridge before restore
 - Snapshot: capture + live World xf when World
-- Restore: seed map → set-presentation → (World) wait UO → direct-restore
+- World restore uses **WORLD MATERIALIZATION**
+  (Dashboard → `/show` → World → wait live UO → `direct-restore` → `/hide`)
+- Dashboard/Theater: direct `set-presentation` only
 - No hand fallback during normal startup
 
 ## CLI

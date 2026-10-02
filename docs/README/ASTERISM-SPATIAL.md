@@ -63,5 +63,20 @@ capture → save presentation → merge remembered transforms → if World,
 
 ## Restore algorithm
 
-seed presentation transform (if any) → `set-presentation` → for World wait
-live UO → `direct-restore`. No hand fallback on normal startup.
+**Dashboard / Theater:** seed (if any) → `set-presentation` → validate capture.
+
+**World (WORLD MATERIALIZATION):** Valve only mounts `UndockedOverlay` after a
+real Dashboard→World transition while the dashboard is shown; `map[World]` alone
+is not enough.
+
+```
+seed-presentation-transform(world, P)   # if transforms.world exists
+set-presentation dashboard
+POST /show                              # visibility/materialization only
+set-presentation world
+wait dockLocation==World AND find-live-uo
+direct-restore(P)                       # if transforms.world exists
+POST /hide                              # best-effort; never masks primary error
+```
+
+No hand/controller fallback on normal startup.

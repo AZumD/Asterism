@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+import time
 from pathlib import Path
 from unittest import mock
 
@@ -163,20 +164,26 @@ def test_snapshot_failure_preserves_peers() -> None:
 
 
 def test_world_restore_presentation_first() -> None:
-    calls = []
+    calls: list[str] = []
+    modes: list[str] = []
+    http_actions: list[str] = []
 
     def fake_req(cmd, **kw):
         calls.append(cmd)
         if cmd == "seed-presentation-transform":
+            assert kw.get("presentation") == "world"
             return {"ok": True, "result": {"ok": True}}
         if cmd == "set-presentation":
+            modes.append(kw.get("mode"))
             return {"ok": True, "result": {"ok": True, "path": "SetDockLocation"}}
         if cmd == "capture":
+            # After world set, report World
+            name = "World" if "world" in modes else "Dashboard"
             return {
                 "ok": True,
                 "result": {
                     "ok": True,
-                    "capture": {"dockLocationName": "World"},
+                    "capture": {"dockLocationName": name},
                 },
             }
         if cmd == "find-live-uo":
@@ -188,27 +195,149 @@ def test_world_restore_presentation_first() -> None:
             }
         raise AssertionError(cmd)
 
+    def fake_http(http, action):
+        http_actions.append(action)
+        return {"ok": True, "action": action}
+
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "s.json"
         set_display_world("display-1", P, path=path)
         with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
-            with mock.patch.object(
-                restore_mod, "overlay_key_for_display", return_value="asterism.desktop.app.2"
-            ):
-                r = restore_mod.restore_display(
-                    "display-1", path=path, allow_hand_fallback=False
-                )
-        assert r["ok"]
+            with mock.patch.object(restore_mod, "_http_action", side_effect=fake_http):
+                with mock.patch.object(restore_mod, "time") as tmod:
+                    tmod.sleep = lambda *_a, **_k: None
+                    tmod.time = time.time
+                    with mock.patch.object(
+                        restore_mod,
+                        "overlay_key_for_display",
+                        return_value="asterism.desktop.app.2",
+                    ):
+                        r = restore_mod.restore_display(
+                            "display-1", path=path, allow_hand_fallback=False
+                        )
+        assert r["ok"], r
         assert "restore-via-hand" not in calls
-        # presentation before direct
-        assert calls.index("set-presentation") < calls.index("direct-restore")
+        assert calls[0] == "seed-presentation-transform"
+        assert modes == ["dashboard", "world"]
+        assert http_actions == ["show", "hide"]
+        assert calls.index("direct-restore") > calls.index("find-live-uo")
         assert "seed-presentation-transform" in calls
+        assert r["materialization"]["live_ready"] is True
+        assert r["path"] == "world-materialization+direct-restore"
     print("OK world restore order")
+
+
+def test_world_hide_on_failure_and_no_mask() -> None:
+    http_actions: list[str] = []
+
+    def fake_req(cmd, **kw):
+        if cmd == "seed-presentation-transform":
+            return {"ok": True, "result": {"ok": True}}
+        if cmd == "set-presentation":
+            return {"ok": True, "result": {"ok": True}}
+        raise AssertionError(cmd)
+
+    def fake_http(http, action):
+        http_actions.append(action)
+        if action == "show":
+            return {"ok": True}
+        return {"ok": False, "error": "hide failed"}
+
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "s.json"
+        set_display_world("display-1", P, path=path)
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(restore_mod, "_http_action", side_effect=fake_http):
+                with mock.patch.object(restore_mod, "time") as tmod:
+                    tmod.sleep = lambda *_a, **_k: None
+                    tmod.time = time.time
+                    with mock.patch.object(
+                        restore_mod,
+                        "_wait_presentation",
+                        return_value={"ok": True},
+                    ):
+                        with mock.patch.object(
+                            restore_mod,
+                            "_wait_world_ready",
+                            return_value={"ok": False, "error": "timeout waiting"},
+                        ):
+                            with mock.patch.object(
+                                restore_mod,
+                                "overlay_key_for_display",
+                                return_value="asterism.desktop.app.2",
+                            ):
+                                r = restore_mod.restore_display(
+                                    "display-1",
+                                    path=path,
+                                    allow_hand_fallback=False,
+                                )
+        assert r["ok"] is False
+        assert r["error"] == "timeout waiting"
+        assert http_actions == ["show", "hide"]
+        assert r["materialization"]["hide"]["ok"] is False
+        assert "hide failed" not in (r.get("error") or "")
+    print("OK hide on failure no mask")
+
+
+def test_world_no_transform_still_materializes() -> None:
+    calls: list[str] = []
+    http_actions: list[str] = []
+
+    def fake_req(cmd, **kw):
+        calls.append(cmd)
+        if cmd == "set-presentation":
+            return {"ok": True, "result": {"ok": True}}
+        if cmd == "capture":
+            return {
+                "ok": True,
+                "result": {"ok": True, "capture": {"dockLocationName": "World"}},
+            }
+        if cmd == "find-live-uo":
+            return {"ok": True, "result": {"ok": True, "live": {"found": True}}}
+        if cmd == "seed-presentation-transform":
+            raise AssertionError("should not seed without transform")
+        if cmd == "direct-restore":
+            raise AssertionError("should not direct-restore without transform")
+        raise AssertionError(cmd)
+
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "s.json"
+        save(
+            {
+                "version": 2,
+                "displays": {"display-1": {"presentation": "world", "transforms": {}}},
+            },
+            path,
+        )
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(
+                restore_mod,
+                "_http_action",
+                side_effect=lambda _h, a: http_actions.append(a) or {"ok": True},
+            ):
+                with mock.patch.object(restore_mod, "time") as tmod:
+                    tmod.sleep = lambda *_a, **_k: None
+                    tmod.time = time.time
+                    with mock.patch.object(
+                        restore_mod,
+                        "overlay_key_for_display",
+                        return_value="asterism.desktop.app.2",
+                    ):
+                        r = restore_mod.restore_display(
+                            "display-1", path=path, allow_hand_fallback=False
+                        )
+        assert r["ok"] is True
+        assert "direct-restore" not in calls
+        assert "seed-presentation-transform" not in calls
+        assert http_actions == ["show", "hide"]
+        assert r["materialization"]["live_ready"] is True
+    print("OK world no-transform materialize")
 
 
 def test_dashboard_theater_restore() -> None:
     for mode in ("dashboard", "theater"):
         calls = []
+        http_actions: list[str] = []
 
         def fake_req(cmd, **kw):
             calls.append(cmd)
@@ -242,15 +371,22 @@ def test_dashboard_theater_restore() -> None:
             with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
                 with mock.patch.object(
                     restore_mod,
-                    "overlay_key_for_display",
-                    return_value="asterism.desktop.app.2",
+                    "_http_action",
+                    side_effect=lambda *_a, **_k: http_actions.append("x") or {"ok": True},
                 ):
-                    r = restore_mod.restore_display(
-                        "display-1", path=path, allow_hand_fallback=False
-                    )
+                    with mock.patch.object(
+                        restore_mod,
+                        "overlay_key_for_display",
+                        return_value="asterism.desktop.app.2",
+                    ):
+                        r = restore_mod.restore_display(
+                            "display-1", path=path, allow_hand_fallback=False
+                        )
             assert r["ok"], r
             assert "direct-restore" not in calls
             assert "restore-via-hand" not in calls
+            assert http_actions == []  # no World materialization show/hide
+            assert "materialization" not in r
     print("OK dashboard/theater restore")
 
 
@@ -264,49 +400,50 @@ def test_no_hand_on_startup_restore_all() -> None:
                 return {"ok": True, "result": {"ok": True}}
             if cmd == "set-presentation":
                 return {"ok": True, "result": {"ok": True}}
-            if cmd == "capture":
-                return {
-                    "ok": True,
-                    "result": {
-                        "ok": True,
-                        "capture": {"dockLocationName": "Dashboard"},
-                    },
-                }
-            if cmd == "find-live-uo":
-                return {"ok": True, "result": {"ok": False, "live": {"found": False}}}
             if cmd == "restore-via-hand":
                 raise AssertionError("hand must not be used")
             if cmd == "direct-restore":
-                return {"ok": True, "result": {"ok": False, "error": "not world"}}
+                raise AssertionError("direct should not run if live UO missing")
             return {"ok": True, "result": {"ok": False}}
 
         with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
-            with mock.patch.object(restore_mod, "wait_for_ws", return_value=True):
-                with mock.patch.object(
-                    restore_mod,
-                    "map_displays_to_overlays",
-                    return_value=[
-                        {
-                            "display_id": "display-1",
-                            "overlay_key": "asterism.desktop.app.2",
-                        }
-                    ],
-                ):
+            with mock.patch.object(
+                restore_mod, "_http_action", return_value={"ok": True}
+            ):
+                with mock.patch.object(restore_mod, "time") as tmod:
+                    tmod.sleep = lambda *_a, **_k: None
+                    tmod.time = time.time
                     with mock.patch.object(
-                        restore_mod,
-                        "overlay_key_for_display",
-                        return_value="asterism.desktop.app.2",
+                        restore_mod, "_wait_presentation", return_value={"ok": True}
                     ):
-                        # Force wait_world to fail quickly
-                        with mock.patch.object(
-                            restore_mod,
-                            "_wait_world_ready",
-                            return_value={"ok": False, "error": "timeout"},
-                        ):
-                            r = restore_mod.restore_all(
-                                path=path, wait_ws=False, allow_hand_fallback=False
-                            )
+                        with mock.patch.object(restore_mod, "wait_for_ws", return_value=True):
+                            with mock.patch.object(
+                                restore_mod,
+                                "map_displays_to_overlays",
+                                return_value=[
+                                    {
+                                        "display_id": "display-1",
+                                        "overlay_key": "asterism.desktop.app.2",
+                                    }
+                                ],
+                            ):
+                                with mock.patch.object(
+                                    restore_mod,
+                                    "overlay_key_for_display",
+                                    return_value="asterism.desktop.app.2",
+                                ):
+                                    with mock.patch.object(
+                                        restore_mod,
+                                        "_wait_world_ready",
+                                        return_value={"ok": False, "error": "timeout"},
+                                    ):
+                                        r = restore_mod.restore_all(
+                                            path=path,
+                                            wait_ws=False,
+                                            allow_hand_fallback=False,
+                                        )
         assert r["results"][0].get("path") != "restore-via-hand"
+        assert r["results"][0].get("ok") is False
     print("OK no hand fallback startup")
 
 
@@ -494,6 +631,8 @@ def main() -> int:
     test_snapshot_prefers_live_world()
     test_snapshot_failure_preserves_peers()
     test_world_restore_presentation_first()
+    test_world_hide_on_failure_and_no_mask()
+    test_world_no_transform_still_materializes()
     test_dashboard_theater_restore()
     test_no_hand_on_startup_restore_all()
     test_missing_corrupt_state()
