@@ -1,0 +1,30 @@
+[
+  {
+    "key": "asterism.desktop.app.2",
+    "index": 0,
+    "configured": "world",
+    "visible": true,
+    "transform_type": {
+      "id": 5,
+      "name": "DashboardTab"
+    },
+    "absolute": null,
+    "absolute_error": "VROverlayError_WrongTransformType",
+    "width_m": 2.5,
+    "overlay_error": null
+  },
+  {
+    "key": "asterism.desktop.app.3",
+    "index": 1,
+    "configured": "world",
+    "visible": true,
+    "transform_type": {
+      "id": 5,
+      "name": "DashboardTab"
+    },
+    "absolute": null,
+    "absolute_error": "VROverlayError_WrongTransformType",
+    "width_m": 2.5,
+    "overlay_error": null
+  }
+]

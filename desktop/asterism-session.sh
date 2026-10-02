@@ -145,11 +145,25 @@ fi
 # ASTERISM_GAMESCOPE_BIN / ASTERISM_OPENVR_CTRL come from asterism.conf when set.
 gamescope_bin=${ASTERISM_GAMESCOPE_BIN:-gamescope}
 export ASTERISM_OPENVR_CTRL=${ASTERISM_OPENVR_CTRL:-0}
+# Fast owner-proof path: LD_PRELOAD into stock gamescope (same process / OpenVR client).
+# Does not modify /usr gamescope. Unset ASTERISM_OPENVR_CTRL to recover.
+owner_so=${ASTERISM_OPENVR_OWNER_SO:-$root/pointer/helper/build/asterism-openvr-owner.so}
+if [ "${ASTERISM_OPENVR_CTRL:-0}" = "1" ] || [ "${ASTERISM_OPENVR_CTRL:-0}" = "true" ]; then
+  if [ -f "$owner_so" ]; then
+    export LD_PRELOAD="$owner_so${LD_PRELOAD:+:$LD_PRELOAD}"
+    asterism_log INFO "ASTERISM_OPENVR_CTRL=1 LD_PRELOAD=$owner_so"
+  else
+    asterism_log WARN "ASTERISM_OPENVR_CTRL=1 but owner so missing: $owner_so"
+  fi
+fi
 asterism_log INFO "gamescope_bin=$gamescope_bin ASTERISM_OPENVR_CTRL=$ASTERISM_OPENVR_CTRL"
 # Safety: never silently fall back if an experimental path is configured but missing.
 if [ -n "${ASTERISM_GAMESCOPE_BIN:-}" ] && [ ! -x "$gamescope_bin" ]; then
   asterism_log ERROR "ASTERISM_GAMESCOPE_BIN not executable: $gamescope_bin — refusing start (fix conf to recover stock)"
   exit 1
 fi
+
+# Clear stale owner socket before exec so a dead inode cannot fake readiness.
+rm -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/asterism/gamescope-openvr.sock" 2>/dev/null || true
 
 exec "$gamescope_bin" "${gs_args[@]}" -- "$inner"

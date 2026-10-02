@@ -16,3 +16,9 @@ g++ -std=c++17 -O2 -Wall -Wno-unused-parameter -fno-math-errno \
   -o build/asterism-overlay-inspect asterism-overlay-inspect.cpp \
   -L/opt/steamvr/bin/linuxarm64 -lopenvr_api -lpthread -Wl,-rpath,/opt/steamvr/bin/linuxarm64
 echo "built $root/pointer/helper/build/asterism-overlay-inspect"
+
+g++ -std=c++17 -O2 -Wall -Wno-unused-parameter -fPIC -shared -fno-math-errno \
+  -I/opt/steamvr/tools/hellovr_vulkan_linux/src/openvr/headers \
+  -o build/asterism-openvr-owner.so asterism-openvr-owner.cpp \
+  -L/opt/steamvr/bin/linuxarm64 -lopenvr_api -lpthread -ldl -Wl,-rpath,/opt/steamvr/bin/linuxarm64
+echo "built $root/pointer/helper/build/asterism-openvr-owner.so"
