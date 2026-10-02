@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "layout"))
 sys.path.insert(0, str(ROOT / "display"))
 
 from displays import DisplayConfigError, add_display, default_config, set_field, validate_config  # noqa: E402
-from layout import default_layout, ensure_screen_count, save, validate_layout  # noqa: E402
+from layout import default_layout, ensure_screen_count, save, screen_dock, validate_layout  # noqa: E402
 
 
 class MultiDisplayTest(unittest.TestCase):
@@ -41,6 +41,20 @@ class LayoutTest(unittest.TestCase):
             path = Path(td) / "layout.json"
             save(default_layout(2), path)
             self.assertTrue(path.is_file())
+
+    def test_screen_dock_reads_saved_modes(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "layout.json"
+            lay = default_layout(3)
+            lay["screens"][0]["dock"] = "theater"
+            lay["screens"][1]["dock"] = "dashboard"
+            lay["screens"][2]["dock"] = "world"
+            save(lay, path)
+            self.assertEqual(screen_dock(0, path), "theater")
+            self.assertEqual(screen_dock(1, path), "dashboard")
+            self.assertEqual(screen_dock(2, path), "world")
+            self.assertEqual(screen_dock(-1, path), "world")
+            self.assertEqual(screen_dock(9, path), "world")
 
 
 if __name__ == "__main__":

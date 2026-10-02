@@ -9,17 +9,20 @@ Persist VR panel dock mode (`dashboard` / `theater` / `world`) and planned poses
 
 ## Behaviour
 
-- On desktop start / SteamVR-up: `asterism-layout apply` restores each screen’s dock mode only (theater→dashboard→world float dance). It does **not** laser-grab by default — auto place was stealing the dashboard laser and shoving panels around without landing on the saved poses.
-- Absolute place (`asterism-place` / `asterism-layout place`) is **opt-in** (`--place` or `ASTERISM_PLACE_ON_APPLY=1`) until the grab path is reliable.
-- `asterism-layout release-pointer` force-hides the virtual controller if the laser is stuck.
+- **Sole startup owner:** `desktop/asterism-session.sh` runs one `asterism-layout apply` when gamescope creates overlays (`ASTERISM_LAYOUT_OWNER=asterism-session`). Dashboard show/focus/steamvr-up are visibility-only and must not spawn apply (avoids theater→dashboard→world races).
+- Concurrent applies: non-blocking flock on `layout.apply.lock` + generation file under `~/.local/state/asterism/`.
+- `apply` restores dock modes only (theater→dashboard→world float dance). It does **not** laser-grab by default — auto place was stealing the dashboard laser.
+- Absolute place (`asterism-place` / `asterism-layout place`) is **opt-in** (`--place` or `ASTERISM_PLACE_ON_APPLY=1`) until ownership is proven (see `docs/OWNERSHIP_BOUNDARY.md`).
+- `asterism-layout live` — read-only OpenVR transform type / absolute inspect for live PerWindow overlays.
 - `desktop/asterism-apply-outputs.sh` places KWin outputs edge-to-edge so panels do not share pixels.
 
 ## Usage
 
 ```
-asterism-layout show|sync|init|keys
+asterism-layout show|sync|init|keys|get-dock INDEX
 asterism-layout set-dock INDEX world|theater|dashboard
 asterism-layout apply [--wait SECONDS] [--place]
 asterism-layout place
 asterism-layout release-pointer
+asterism-layout live
 ```

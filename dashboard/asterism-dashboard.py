@@ -230,55 +230,33 @@ def stop_desktop(*, reason: str = "admin") -> str:
 
 
 def focus_desktop_overlay(*, force_dashboard: bool = False) -> None:
-    """Bring Asterism overlays forward without stomping saved dock modes.
+    """Visibility/focus only — NEVER mutates layout or dock modes.
 
-    Older PoC code always `vrcmd --dock-overlay dashboard`, which undid
-    layout.json world/theater floats after every SteamVR restart. FrameTop's
-    gamescope path restores dock mode via ft-layout apply instead.
+    Layout restore is owned solely by desktop/asterism-session.sh (one apply
+    when a new gamescope process creates PerWindow overlays). Calling apply
+    from show/steamvr-up raced with the session apply and re-ran
+    theater→dashboard→world.
     """
+    try:
+        vrcmd("--showdashboard")
+        log("vrcmd --showdashboard (visibility only)")
+    except Exception as e:  # noqa: BLE001
+        log(f"showdashboard failed: {e}")
     if force_dashboard:
-        try:
-            vrcmd("--showdashboard")
-            log("vrcmd --showdashboard (force_dashboard)")
-        except Exception as e:  # noqa: BLE001
-            log(f"showdashboard failed: {e}")
+        # Administrative path only (explicit force); still no layout apply.
         for key in (OVERLAY_KEY, f"{OVERLAY_KEY}.app.0"):
             try:
                 r = vrcmd("--dock-overlay", "dashboard", key)
                 if r.returncode == 0:
-                    log(f"vrcmd --dock-overlay dashboard {key}")
+                    log(f"vrcmd --dock-overlay dashboard {key} (force_dashboard)")
                     break
             except Exception as e:  # noqa: BLE001
                 log(f"dock-overlay {key}: {e}")
-        return
-
-    # Restore dashboard/theater/world from layout.json (default: world).
-    try:
-        msg = restore_layout(wait=45.0)
-        log(f"layout restore: {msg}")
-    except Exception as e:  # noqa: BLE001
-        log(f"layout restore failed ({e}); falling back to showdashboard")
-        try:
-            vrcmd("--showdashboard")
-        except Exception as e2:  # noqa: BLE001
-            log(f"showdashboard failed: {e2}")
 
 
 def restore_layout(*, wait: float = 45.0) -> str:
-    """Run asterism-layout apply on the real user bus (non-fatal)."""
-    layout_bin = ROOT / "scripts" / "asterism-layout"
-    if not layout_bin.is_file():
-        return "asterism-layout missing"
-    # Apply in a short-lived child so the supervisor/IPC loop is not blocked for --wait.
-    log(f"spawning asterism-layout apply --wait {int(wait)}")
-    subprocess.Popen(
-        [str(layout_bin), "apply", "--wait", str(int(wait))],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env=env_for_vr(),
-        start_new_session=True,
-    )
-    return "layout apply started"
+    """Deprecated: layout apply is session-owned. Kept for diagnostics only."""
+    return "skipped: layout apply owned by asterism-session.sh (not dashboard)"
 
 
 def show() -> dict:
@@ -492,7 +470,7 @@ def main() -> int:
     if steamvr_alive():
         _steamvr_was_alive = True
         ensure_desktop(reason="dashboard-start")
-        # Restore world/theater/dashboard from layout.json (do not force dashboard dock).
+        # Visibility only — session.sh owns the one-shot layout apply.
         focus_desktop_overlay()
     else:
         log("SteamVR not yet up; waiting (will start desktop when healthy)")

@@ -19,6 +19,11 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+try:
+    import fcntl
+except ImportError:  # Windows unit-test host
+    fcntl = None  # type: ignore
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PATH = Path(
     os.environ.get(
@@ -29,9 +34,30 @@ DEFAULT_PATH = Path(
 STEAMVR = Path(os.environ.get("STEAMVR_ROOT", "/opt/steamvr"))
 VRCMD = Path(os.environ.get("VRCMD", STEAMVR / "bin/linuxarm64/vrcmd"))
 OVERLAY_PREFIX = os.environ.get("ASTERISM_OVERLAY_KEY", "asterism.desktop")
+STATE_DIR = Path(
+    os.environ.get(
+        "ASTERISM_STATE_DIR",
+        Path.home() / ".local/state/asterism",
+    )
+)
+APPLY_LOCK_PATH = STATE_DIR / "layout.apply.lock"
+APPLY_GEN_PATH = STATE_DIR / "layout.apply.generation"
 
 SCHEMA_VERSION = 1
 ALLOWED_DOCK = ("dashboard", "theater", "world")
+
+# VROverlayTransformType (openvr.h) — keep in sync for live inspect.
+TRANSFORM_TYPE_NAMES = {
+    0: "Absolute",
+    1: "TrackedDeviceRelative",
+    2: "SystemOverlay",
+    3: "TrackedComponent",
+    4: "Cursor",
+    5: "DashboardTab",
+    6: "DashboardThumb",
+    7: "Subview",
+    8: "Projection",
+}
 
 
 class LayoutError(Exception):
@@ -303,61 +329,185 @@ def release_pointer() -> dict[str, Any]:
 def apply_layout(
     *, wait: float = 60.0, path: Path | None = None, place: bool | None = None
 ) -> dict[str, Any]:
-    """Wait for PerWindow overlays, restore dock modes. Optional laser place is opt-in."""
-    layout = load(path)
-    if not layout.get("auto", True):
-        return {"ok": True, "skipped": True, "reason": "auto=false"}
-    deadline = time.time() + wait
-    keys: list[str] = []
-    want = len(layout["screens"])
-    while time.time() < deadline:
-        keys = screen_keys()
-        if len(keys) >= want:
-            break
-        time.sleep(1.0)
-    if not keys:
-        raise LayoutError("no Asterism PerWindow overlays yet; is the desktop running?")
-    keys = keys[:want]
-    layout = ensure_screen_count(layout, len(keys))
-    # Quiet any leftover virtual controller from a prior failed place.
+    """Wait for PerWindow overlays, restore dock modes. Optional laser place is opt-in.
+
+    Concurrent applies are rejected (flock). Generation counter is bumped under the lock
+    so overlapping session+dashboard races cannot both mutate dock state.
+    """
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = APPLY_LOCK_PATH
+    lock_fd = open(lock_path, "a+", encoding="utf-8")
+    generation = 0
     try:
-        release_pointer()
-    except Exception:
-        pass
-    vrcmd("--hidedashboard")
-    time.sleep(0.5)
-    applied = []
-    for key, screen in zip(keys, layout["screens"]):
-        entry: dict[str, Any] = {"key": key, "dock": screen["dock"]}
-        float_then_dock(key, screen["dock"])
-        applied.append(entry)
-    do_place = place_on_apply_enabled() if place is None else place
-    if do_place:
-        time.sleep(1.0)
-        for entry, screen in zip(applied, layout["screens"]):
-            if screen["dock"] != "world":
-                continue
-            key = entry["key"]
-            placed = place_world(key, screen)
-            entry["place"] = placed
+        if fcntl is not None:
+            try:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return {
+                    "ok": True,
+                    "skipped": True,
+                    "reason": "apply already in progress",
+                    "owner_hint": "desktop/asterism-session.sh is the sole startup owner",
+                }
+        # Bump generation under lock.
+        try:
+            prev = int(APPLY_GEN_PATH.read_text(encoding="utf-8").strip() or "0")
+        except (OSError, ValueError):
+            prev = 0
+        generation = prev + 1
+        APPLY_GEN_PATH.write_text(str(generation) + "\n", encoding="utf-8")
+        lock_fd.seek(0)
+        lock_fd.truncate()
+        lock_fd.write(
+            json.dumps(
+                {
+                    "pid": os.getpid(),
+                    "generation": generation,
+                    "owner": os.environ.get("ASTERISM_LAYOUT_OWNER", "cli"),
+                    "started": time.time(),
+                }
+            )
+            + "\n"
+        )
+        lock_fd.flush()
+
+        layout = load(path)
+        if not layout.get("auto", True):
+            return {"ok": True, "skipped": True, "reason": "auto=false", "generation": generation}
+        deadline = time.time() + wait
+        keys: list[str] = []
+        want = len(layout["screens"])
+        while time.time() < deadline:
+            keys = screen_keys()
+            if len(keys) >= want:
+                break
+            time.sleep(1.0)
+        if not keys:
+            raise LayoutError("no Asterism PerWindow overlays yet; is the desktop running?")
+        keys = keys[:want]
+        layout = ensure_screen_count(layout, len(keys))
         try:
             release_pointer()
         except Exception:
             pass
-    save(layout, path)
-    return {
-        "ok": True,
-        "applied": applied,
-        "place_on_apply": do_place,
-        "placed": (
-            all(
-                a.get("dock") != "world" or (a.get("place") or {}).get("ok")
-                for a in applied
+        vrcmd("--hidedashboard")
+        time.sleep(0.5)
+        applied = []
+        for key, screen in zip(keys, layout["screens"]):
+            entry: dict[str, Any] = {"key": key, "dock": screen["dock"]}
+            float_then_dock(key, screen["dock"])
+            applied.append(entry)
+        do_place = place_on_apply_enabled() if place is None else place
+        if do_place:
+            time.sleep(1.0)
+            for entry, screen in zip(applied, layout["screens"]):
+                if screen["dock"] != "world":
+                    continue
+                key = entry["key"]
+                placed = place_world(key, screen)
+                entry["place"] = placed
+            try:
+                release_pointer()
+            except Exception:
+                pass
+        save(layout, path)
+        return {
+            "ok": True,
+            "applied": applied,
+            "generation": generation,
+            "owner": os.environ.get("ASTERISM_LAYOUT_OWNER", "cli"),
+            "place_on_apply": do_place,
+            "placed": (
+                all(
+                    a.get("dock") != "world" or (a.get("place") or {}).get("ok")
+                    for a in applied
+                )
+                if do_place
+                else None
+            ),
+        }
+    finally:
+        if fcntl is not None:
+            try:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+        lock_fd.close()
+
+
+def screen_dock(index: int, path: Path | None = None) -> str:
+    """Saved dock mode for layout screen index (0-based). Default world."""
+    layout = load(path)
+    if index < 0 or index >= len(layout["screens"]):
+        return "world"
+    return str(layout["screens"][index].get("dock", "world"))
+
+
+def inspect_live(*, path: Path | None = None) -> list[dict[str, Any]]:
+    """Read-only OpenVR overlay transform inspection for Asterism PerWindow keys."""
+    layout = load(path)
+    keys = screen_keys()
+    # Prefer compiled helper; fall back to empty diagnostics if missing.
+    bin_path = Path(
+        os.environ.get(
+            "ASTERISM_OVERLAY_INSPECT",
+            ROOT / "pointer" / "helper" / "build" / "asterism-overlay-inspect",
+        )
+    )
+    rows: list[dict[str, Any]] = []
+    if bin_path.is_file():
+        env = env_for_vr()
+        r = subprocess.run(
+            [str(bin_path), "json", *keys] if keys else [str(bin_path), "json"],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=30,
+            check=False,
+        )
+        try:
+            raw = json.loads(r.stdout or "[]")
+        except json.JSONDecodeError:
+            raw = []
+            rows.append(
+                {
+                    "error": "inspect helper bad JSON",
+                    "stdout": (r.stdout or "")[:500],
+                    "stderr": (r.stderr or "")[:500],
+                    "rc": r.returncode,
+                }
             )
-            if do_place
-            else None
-        ),
-    }
+            return rows
+        by_key = {x.get("key"): x for x in raw if isinstance(x, dict)}
+    else:
+        by_key = {}
+        rows.append(
+            {
+                "warning": f"asterism-overlay-inspect missing at {bin_path}; "
+                "build pointer/helper (overlay keys listed without OpenVR fields)"
+            }
+        )
+
+    for i, key in enumerate(keys):
+        configured = (
+            layout["screens"][i]["dock"] if i < len(layout["screens"]) else "world"
+        )
+        live = by_key.get(key, {})
+        row = {
+            "key": key,
+            "index": i,
+            "configured": configured,
+            "visible": live.get("visible"),
+            "transform_type": live.get("transform_type"),
+            "absolute": live.get("absolute"),
+            "absolute_error": live.get("absolute_error"),
+            "width_m": live.get("width_m"),
+            "overlay_error": live.get("overlay_error"),
+        }
+        rows.append(row)
+    if not keys and not rows:
+        rows.append({"warning": "no Asterism PerWindow overlays listed by vrcmd"})
+    return rows
 
 
 def apply_places(*, path: Path | None = None) -> dict[str, Any]:

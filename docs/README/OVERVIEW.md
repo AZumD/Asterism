@@ -20,7 +20,11 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `display/displays.py` | [DISPLAYS.md](DISPLAYS.md) |
 | `layout/layout.py` | [LAYOUT.md](LAYOUT.md) |
 | `scripts/asterism-layout` | [ASTERISM-LAYOUT.md](ASTERISM-LAYOUT.md) |
+| `pointer/helper/asterism-overlay-inspect.cpp` | [ASTERISM-OVERLAY-INSPECT.md](ASTERISM-OVERLAY-INSPECT.md) |
 | `pointer/helper/asterism-place.cpp` | [ASTERISM-PLACE.md](ASTERISM-PLACE.md) |
+| `gamescope-asterism/` + `scripts/asterism-gamescope-*.sh` | [ASTERISM-GAMESCOPE.md](ASTERISM-GAMESCOPE.md) |
+| `docs/OWNERSHIP_BOUNDARY.md` | Spatial transform ownership investigation |
+| `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |

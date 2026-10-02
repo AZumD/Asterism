@@ -72,6 +72,18 @@ class DesktopSettingsSourceTest(unittest.TestCase):
         Gtk = mod._require_gtk()
         self.assertTrue(hasattr(Gtk, "Window"))
 
+    def test_dock_combo_loads_from_layout_not_default(self):
+        """Desktop Settings must load saved dock from layout.json per selected display."""
+        src = SETTINGS.read_text(encoding="utf-8")
+        self.assertIn("def _load_dock_combo", src)
+        self.assertIn("screen_dock", src)
+        self.assertIn("self._load_dock_combo()", src)
+        # Construction may default the ComboBox, but selection must reload saved state.
+        select_idx = src.find("def _on_select(")
+        self.assertGreater(select_idx, 0)
+        chunk = src[select_idx : select_idx + 1200]
+        self.assertIn("_load_dock_combo", chunk)
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main(verbosity=2))

@@ -127,16 +127,29 @@ if [ "${output_count:-1}" -gt 1 ]; then
   asterism_log INFO "multi-display: PerWindow strategy outputs=$output_count"
 fi
 
-# Restore VR dock/theater/world layout once PerWindow overlays exist (FrameTop ft-layout apply).
-# Must start before exec so gamescope remains the service MainPID.
+# Restore VR dock/theater/world layout ONCE when this gamescope creates overlays.
+# Sole owner of startup layout apply — dashboard show/focus must NEVER spawn apply
+# (that raced theater→dashboard→world). Concurrent applies are rejected via flock.
 if [ -x "$root/scripts/asterism-layout" ]; then
   (
     export XDG_RUNTIME_DIR=/run/user/$(id -u)
     export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+    export ASTERISM_LAYOUT_OWNER=asterism-session
     "$root/scripts/asterism-layout" sync >/dev/null 2>&1 || true
     "$root/scripts/asterism-layout" apply --wait 90 >>"$ASTERISM_LOG_DIR/layout.log" 2>&1 || true
   ) &
   disown || true
 fi
 
-exec gamescope "${gs_args[@]}" -- "$inner"
+# Optional experimental Gamescope (owner-transform proof). Stock path remains default.
+# ASTERISM_GAMESCOPE_BIN / ASTERISM_OPENVR_CTRL come from asterism.conf when set.
+gamescope_bin=${ASTERISM_GAMESCOPE_BIN:-gamescope}
+export ASTERISM_OPENVR_CTRL=${ASTERISM_OPENVR_CTRL:-0}
+asterism_log INFO "gamescope_bin=$gamescope_bin ASTERISM_OPENVR_CTRL=$ASTERISM_OPENVR_CTRL"
+# Safety: never silently fall back if an experimental path is configured but missing.
+if [ -n "${ASTERISM_GAMESCOPE_BIN:-}" ] && [ ! -x "$gamescope_bin" ]; then
+  asterism_log ERROR "ASTERISM_GAMESCOPE_BIN not executable: $gamescope_bin — refusing start (fix conf to recover stock)"
+  exit 1
+fi
+
+exec "$gamescope_bin" "${gs_args[@]}" -- "$inner"

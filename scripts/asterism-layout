@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI for Asterism VR layout (dock/theater/world + saved poses)."""
+"""CLI for Asterism VR layout (dock/theater/world + live inspect)."""
 from __future__ import annotations
 
 import argparse
@@ -16,10 +16,12 @@ from layout import (  # noqa: E402
     apply_layout,
     apply_places,
     default_layout,
+    inspect_live,
     load,
     release_pointer,
     remember_world_docks,
     save,
+    screen_dock,
     screen_keys,
     sync_layout_to_display_count,
 )
@@ -41,9 +43,19 @@ def main() -> int:
     sub.add_parser("place", help="laser-grab world panels to layout.json poses")
     sub.add_parser("release-pointer", help="force-hide asterism_pointer virtual controller")
     sub.add_parser("keys", help="list live PerWindow overlay keys")
+    sub.add_parser(
+        "live",
+        help="read-only OpenVR transform inspect for live Asterism overlays (JSON)",
+    )
+    sub.add_parser(
+        "inspect-live",
+        help="alias for live",
+    )
     sp = sub.add_parser("set-dock", help="set dock mode for screen index (0-based)")
     sp.add_argument("index", type=int)
     sp.add_argument("mode", choices=("dashboard", "theater", "world"))
+    gd = sub.add_parser("get-dock", help="print saved dock mode for screen index")
+    gd.add_argument("index", type=int)
     sub.add_parser("sync", help="resize layout.screens to match displays.json")
     sub.add_parser("init", help="write default layout for current display count")
     sub.add_parser("remember-world", help="set every screen dock=world (persist float)")
@@ -54,6 +66,8 @@ def main() -> int:
             print(json.dumps(load(), indent=2))
         elif args.cmd == "keys":
             print(json.dumps(screen_keys(), indent=2))
+        elif args.cmd in ("live", "inspect-live"):
+            print(json.dumps(inspect_live(), indent=2))
         elif args.cmd == "apply":
             print(json.dumps(apply_layout(wait=args.wait, place=args.place or None), indent=2))
         elif args.cmd == "place":
@@ -68,6 +82,8 @@ def main() -> int:
             layout["mode"] = "custom"
             save(layout)
             print(json.dumps(layout["screens"][args.index], indent=2))
+        elif args.cmd == "get-dock":
+            print(json.dumps({"index": args.index, "dock": screen_dock(args.index)}, indent=2))
         elif args.cmd == "sync":
             n = enabled_count(load_displays())
             print(json.dumps(sync_layout_to_display_count(n), indent=2))

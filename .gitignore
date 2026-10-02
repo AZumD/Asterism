@@ -3,3 +3,13 @@
 *.pyc
 __pycache__/
 .cache/
+
+# Experimental Gamescope clone/build (never commit Valve tree or binaries)
+gamescope-asterism/src/
+gamescope-asterism/build/
+gamescope-asterism/out/
+gamescope-asterism/BUILT_FROM_COMMIT
+
+# Built OpenVR helpers
+pointer/helper/build/
+

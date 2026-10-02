@@ -12,7 +12,7 @@ Boring GUI for display topology (`~/.config/asterism/displays.json`). Talks to `
 
 - **GTK3 + PyGObject** on the SteamOS host (Frame ships this; **not** tkinter — `libtk` is missing).
 - Host wrapper mirrors FrameTop's `ft-display-settings` + `ft-shell-env` pattern ([AZumD/frametop](https://github.com/AZumD/frametop)): attaches to nested Plasma via `…/asterism_nested/plasmashell.env` when launched from SSH.
-- v0.1 covers FrameTop's Screens-tab concerns only (count / resolution / scale / rotation / primary / restart). No spatial Layout/Visibility/Background.
+- v0.1 covers FrameTop's Screens-tab concerns only (count / resolution / scale / rotation / primary / restart). VR dock mode ComboBox loads the selected display’s saved `layout.json` dock (`world` / `theater` / `dashboard`) via `_load_dock_combo` — not the ComboBox construction default.
 
 ## Usage
 

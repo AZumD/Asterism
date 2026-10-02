@@ -226,6 +226,25 @@ class App:
             idx = 0
         self.rot_combo.set_active(idx)
         self.enabled.set_active(bool(d["enabled"]))
+        # Load actual saved VR dock from layout.json (do not leave ComboBox default).
+        self._load_dock_combo()
+
+    def _load_dock_combo(self) -> None:
+        docks = ("world", "theater", "dashboard")
+        dock = "world"
+        idx = self._display_index()
+        if idx is not None:
+            try:
+                sys.path.insert(0, str(ROOT / "layout"))
+                from layout import screen_dock  # noqa: WPS433
+
+                dock = screen_dock(idx)
+            except Exception:  # noqa: BLE001
+                dock = "world"
+        try:
+            self.dock_combo.set_active(docks.index(dock))
+        except ValueError:
+            self.dock_combo.set_active(0)
 
     def add(self) -> None:
         try:

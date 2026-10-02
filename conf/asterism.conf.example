@@ -9,3 +9,7 @@ OVERLAY_NAME=Desktop
 # in world space. Drag-resize range is separately widened via asterism-vrsettings.sh
 # (dashboard.scaleSliderMax).
 PHYS_WIDTH=2.5
+# Optional: side-by-side experimental Gamescope for owner-transform proof.
+# Leave unset to use stock `gamescope` from PATH. Never overwrite /usr gamescope.
+# ASTERISM_GAMESCOPE_BIN=$HOME/asterism/gamescope-asterism/out/gamescope
+# ASTERISM_OPENVR_CTRL=1
