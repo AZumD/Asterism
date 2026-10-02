@@ -366,6 +366,7 @@ def _asterism_overlay_key_ok(key: str | None) -> bool:
 
 def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
     """Queue one command for asterism_shell.js poll loop. Overwrites prior pending."""
+    global _DASHMGR_PENDING
     if cmd not in ("list", "probe", "capture", "seed-world", "set-presentation"):
         return {"ok": False, "error": f"unsupported cmd: {cmd}"}
     if cmd in ("capture", "seed-world", "set-presentation"):
@@ -380,6 +381,7 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
 
 
 def dashmgr_poll() -> dict:
+    global _DASHMGR_PENDING
     with _DASHMGR_LOCK:
         msg = _DASHMGR_PENDING
         _DASHMGR_PENDING = None

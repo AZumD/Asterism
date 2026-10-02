@@ -31,6 +31,7 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
 | `test/test_dashboard_manager_docs.sh` | [_VERIFY_DASHBOARD_MANAGER_DOCS.md](_VERIFY_DASHBOARD_MANAGER_DOCS.md) |
 | `test/test_dashmgr_bridge_docs.sh` | [_VERIFY_DASHMGR_BRIDGE_DOCS.md](_VERIFY_DASHMGR_BRIDGE_DOCS.md) |
+| `test/test_dashmgr_queue.py` | [_VERIFY_DASHMGR_QUEUE.md](_VERIFY_DASHMGR_QUEUE.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |
