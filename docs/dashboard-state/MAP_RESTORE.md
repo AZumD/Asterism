@@ -82,3 +82,29 @@ Until applied: Phase 3–6 capture/restore not executable from this agent sessio
 | staged bridged chunk | `272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9` |
 | staged systemui.html | `b28803f21ac998906f85ab36e6b0dd75ffd43b2d1ba4fc5dd46ef7bbd3d627ef` |
 | staged asterism_shell.js | `4d006bece0214a955bdcd4f363dfc45850f3934e202e49f1ffa8fd6a7faccf42` |
+
+## Transport update (2026-10-02 evening)
+
+HTTP poll to `127.0.0.1:47831` is **CSP-blocked**. systemui now uses:
+
+`ws://localhost:47832` → minimal RFC6455 server in `dashboard/asterism_ws.py`
+
+CLI path unchanged: HTTP enqueue → FIFO → WebSocket → shell.
+
+### Shell-only live stage (`/tmp/asterism-shell-ws-stage`)
+
+| File | SHA256 |
+|------|--------|
+| live bridged chunk (must stay) | `272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9` |
+| new `asterism_shell.js` | `102fadb99395482467dcd89cbb01c0217adb1d7654e7bebf3b30eee6f8b303cb` |
+| new `systemui.html` (contenthash=asterism3) | `710a96000789c73bafcf55ac40a8dad3ef9150c4361e47e2ae1529618af9eac5` |
+
+Apply (sudo required; chunk untouched):
+
+```bash
+bash ~/asterism/test/_deploy_shell_ws_live.sh
+# or manually:
+# sudo install -m 0644 /tmp/asterism-shell-ws-stage/asterism_shell.js /opt/steamvr/resources/webinterface/dashboard/
+# sudo install -m 0644 /tmp/asterism-shell-ws-stage/systemui.html /opt/steamvr/resources/webinterface/dashboard/
+# rm -rf ~/.cache/SteamVR/htmlcache && systemctl --user restart steamvr.service
+```
