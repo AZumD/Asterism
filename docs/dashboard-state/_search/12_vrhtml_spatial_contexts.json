@@ -1,0 +1,367 @@
+{
+  "CalcDashboardTransform": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 590056,
+      "ctx": "ax(.6,e.translation.y),e):(e=function(e,t){const[r]=VRHTML.GetPose(\"/user/head\",i.muq.Standing);if(r&&(null==r?void 0:r.bPoseIsValid)&&(null==r?void 0:r.xfDeviceToAbsoluteTracking)){const n=-.4;let a=VRHTML.CalcDashboardTransform(r.xfDeviceToAbsoluteTracking,!0);const s=(0,i.vxi)();return s.translation.z=-e,s.translation.y=n-t,VRHTML.MultiplyTransforms(a,s)}}(r,t),e?(e.translation.y=Math.max(.6,e.translation.y),e):void 0)}default:return}}let St=dt=class extends o.Component{constructor(e){super(e),this.m_sMoveDevicePath=void 0,this.m_NudgeReactionHandle=void 0,this.m_DockLo"
+    }
+  ],
+  "ChangeBasis": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596891,
+      "ctx": "tHand}),!n||0==o.length)return void this.scheduleNextDragSnapPulse();let l=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(n,this.state.xfTransform),this.pushTransform);const c=o.map((e=>{const t=VRHTML.ChangeBasis(l,e.xf),r=(0,i.Ujb)(t.translation);return Object.assign(Object.assign({},e),{fDistance:r})})),m={[i.yWq.Dashboard]:.3,[i.yWq.LeftHand]:.4,[i.yWq.RightHand]:.4,[i.yWq.World]:0,[i.yWq.Theater]:0,[i.yWq.Boot]:0};let p=null!==(t=c.filter((e=>{if(!Number.isFinite(e.fDistance))return!1;const t=m[e.location];return t&&e.fDistance<t})).sort(((e,t)=>e.fDis"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 599019,
+      "ctx": ",eTrackingResult:i.MVt.TrackingResult_Running_OK,bPoseIsValid:!0}}if(!a||!n)return;t.docking.SetBeingDragged(!0);let s=VRHTML.MultiplyTransforms(a.xfDeviceToAbsoluteTracking,this.state.xfTransform),o=VRHTML.ChangeBasis(s,n.xfDeviceToAbsoluteTracking);this.setState({xfTransform:o,sParentDevice:this.m_sMoveDevicePath,dragCanSnapToDashboard:!1},this.computeDragSnapDestination),window.addEventListener(\"mouseup\",this.endFloatingWindowMove)}))}endFloatingWindowMove(){return(0,n.sH)(this,void 0,void 0,(function*(){const e=this.props.frame;if(!e)return;const t=this.stat"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 600552,
+      "ctx": "window.removeEventListener(\"mouseup\",this.endFloatingWindowMove);const c=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(l.xfDeviceToAbsoluteTracking,this.state.xfTransform),this.pushTransform),d=VRHTML.ChangeBasis(c,a.xfDeviceToAbsoluteTracking);this.m_flPushDistance=0,(0,s.runInAction)((()=>{this.setState({xfTransform:d,sParentDevice:_t(t),nGrabScaleResetGeneration:this.state.nGrabScaleResetGeneration+1}),e.docking.SetPreviewDockLocation(void 0),e.docking.SetDockLocation(t),e.docking.SetBeingDragged(!1)})),t!=i.yWq.World&&t!=i.yWq.LeftHand&&t!=i.yWq.RightH"
+    }
+  ],
+  "GetCurrentSceneFocusAppName": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 415961,
+      "ctx": "neAppName=t)}else{let e=VRHTML.VRApplications.GetSceneApplicationKey();e&&e.length>0&&(l.Debug(\"updateLatchedValues:\",{oldSceneAppKey:this.m_sceneAppKey,newSceneAppKey:e}),this.m_sceneAppKey=e);let t=VRHTML.GetCurrentSceneFocusAppName();t&&t.length>0&&(this.m_sceneAppName=t)}}resetLatchedValued(){l.Debug(\"resetLatchedValue:\",{sceneAppKey:this.m_sceneAppKey}),this.m_sceneAppName=\"\",this.m_sceneAppKey=\"\",this.m_sceneApplicationState=i.HWH.None}cancelUnresponsiveTimeout(){l.Debug(\"cancelUnresponsiveTimeout\"),this.m_unresponsiveTimeout&&(window.clearTimeout(this.m_unresponsiveTimeo"
+    }
+  ],
+  "GetPose": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 117023,
+      "ctx": "-this.m_startTestTime;this.state.streamingProgress==y.Evaluating&&(this.m_cameraFrameCount>0?this.setState({streamingProgress:y.Success}):e>5e3&&this.setState({streamingProgress:y.Failure}));const[t]=VRHTML.GetPose(i.Gze,i.muq.Standing);if(this.m_cameraFrameCount>0){t&&t.bPoseIsValid||this.setState({trackingProgress:y.Failure}),Date.now()-this.m_firstFrameTime>2e3&&this.state.trackingProgress==y.Evaluating&&this.setState({trackingProgress:y.Success})}}onUpdateCameraFrame(){let e=\"\";try{e=VRHTML.VRTrackedCameraInternal.GetCameraTestFrame(),0==this.m_cameraFra"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 589908,
+      "ctx": "(!r)return;const n=(0,i.vxi)();return n.translation.z=-e,n.translation.y=-.4-t,VRHTML.MultiplyTransforms(r,n)}(r,t);return e?(e.translation.y=Math.max(.6,e.translation.y),e):(e=function(e,t){const[r]=VRHTML.GetPose(\"/user/head\",i.muq.Standing);if(r&&(null==r?void 0:r.bPoseIsValid)&&(null==r?void 0:r.xfDeviceToAbsoluteTracking)){const n=-.4;let a=VRHTML.CalcDashboardTransform(r.xfDeviceToAbsoluteTracking,!0);const s=(0,i.vxi)();return s.translation.z=-e,s.translation.y=n-t,VRHTML.MultiplyTransforms(a,s)}}(r,t),e?(e.translation.y=Math.max(.6,e.translation.y),e"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596165,
+      "ctx": "ination(){var e,t;if(!(null===(e=this.props.frame)||void 0===e?void 0:e.docking.beingDragged)||null===this.state.xfTransform||!this.m_sMoveDevicePath)return;this.refreshCompositorSnapState();const[r]=VRHTML.GetPose(this.m_sMoveDevicePath,i.muq.Standing);if(!r)return;const n=null==r?void 0:r.xfDeviceToAbsoluteTracking,[a]=VRHTML.GetPose(u.v_,i.muq.Standing),[s]=VRHTML.GetPose(u.Ww,i.muq.Standing),o=[];if(this.m_xfDashboardSnapTransform&&d.SW.isFullyVisible&&o.push({xf:this.m_xfDashboardSnapTransform,location:i.yWq.Dashboard}),a&&this.state.sParentDevice!=u.v_"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596288,
+      "ctx": "m||!this.m_sMoveDevicePath)return;this.refreshCompositorSnapState();const[r]=VRHTML.GetPose(this.m_sMoveDevicePath,i.muq.Standing);if(!r)return;const n=null==r?void 0:r.xfDeviceToAbsoluteTracking,[a]=VRHTML.GetPose(u.v_,i.muq.Standing),[s]=VRHTML.GetPose(u.Ww,i.muq.Standing),o=[];if(this.m_xfDashboardSnapTransform&&d.SW.isFullyVisible&&o.push({xf:this.m_xfDashboardSnapTransform,location:i.yWq.Dashboard}),a&&this.state.sParentDevice!=u.v_&&o.push({xf:a.xfDeviceToAbsoluteTracking,location:i.yWq.LeftHand}),s&&this.state.sParentDevice!=u.Ww&&o.push({xf:s.xfDevic"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596328,
+      "ctx": "efreshCompositorSnapState();const[r]=VRHTML.GetPose(this.m_sMoveDevicePath,i.muq.Standing);if(!r)return;const n=null==r?void 0:r.xfDeviceToAbsoluteTracking,[a]=VRHTML.GetPose(u.v_,i.muq.Standing),[s]=VRHTML.GetPose(u.Ww,i.muq.Standing),o=[];if(this.m_xfDashboardSnapTransform&&d.SW.isFullyVisible&&o.push({xf:this.m_xfDashboardSnapTransform,location:i.yWq.Dashboard}),a&&this.state.sParentDevice!=u.v_&&o.push({xf:a.xfDeviceToAbsoluteTracking,location:i.yWq.LeftHand}),s&&this.state.sParentDevice!=u.Ww&&o.push({xf:s.xfDeviceToAbsoluteTracking,location:i.yWq.Right"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 598408,
+      "ctx": "ght:return u.Ww;default:return}}(r),!this.m_sMoveDevicePath)return void console.warn(\"UndockedOverlay.startFloatingWindowMove: mouse event carried no input path, falling back to the head\",r);const[n]=VRHTML.GetPose(this.m_sMoveDevicePath,i.muq.Standing);let a;switch(this.m_xfDashboardSnapTransform=void 0,this.m_bRefreshingCompositorSnapState=!1,this.refreshCompositorSnapState(),t.docking.dockLocation){case i.yWq.LeftHand:[a]=VRHTML.GetPose(u.v_,i.muq.Standing);break;case i.yWq.RightHand:[a]=VRHTML.GetPose(u.Ww,i.muq.Standing);break;default:a={xfDeviceToAbsol"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 598637,
+      "ctx": "vicePath,i.muq.Standing);let a;switch(this.m_xfDashboardSnapTransform=void 0,this.m_bRefreshingCompositorSnapState=!1,this.refreshCompositorSnapState(),t.docking.dockLocation){case i.yWq.LeftHand:[a]=VRHTML.GetPose(u.v_,i.muq.Standing);break;case i.yWq.RightHand:[a]=VRHTML.GetPose(u.Ww,i.muq.Standing);break;default:a={xfDeviceToAbsoluteTracking:(0,i.vxi)(),vVelocity:{x:0,y:0,z:0},eTrackingResult:i.MVt.TrackingResult_Running_OK,bPoseIsValid:!0}}if(!a||!n)return;t.docking.SetBeingDragged(!0);let s=VRHTML.MultiplyTransforms(a.xfDeviceToAbsoluteTracking,this.sta"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 598704,
+      "ctx": "rm=void 0,this.m_bRefreshingCompositorSnapState=!1,this.refreshCompositorSnapState(),t.docking.dockLocation){case i.yWq.LeftHand:[a]=VRHTML.GetPose(u.v_,i.muq.Standing);break;case i.yWq.RightHand:[a]=VRHTML.GetPose(u.Ww,i.muq.Standing);break;default:a={xfDeviceToAbsoluteTracking:(0,i.vxi)(),vVelocity:{x:0,y:0,z:0},eTrackingResult:i.MVt.TrackingResult_Running_OK,bPoseIsValid:!0}}if(!a||!n)return;t.docking.SetBeingDragged(!0);let s=VRHTML.MultiplyTransforms(a.xfDeviceToAbsoluteTracking,this.state.xfTransform),o=VRHTML.ChangeBasis(s,n.xfDeviceToAbsoluteTracking"
+    }
+  ],
+  "GetRecommendedOverlayRenderQuality": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 280953,
+      "ctx": "=>e.toFixed(0)+\"%\",onChange:e=>_.p.setBrightnessUserValue(e),dashboardFadeSupression:!0}))));class k extends s.Component{constructor(e){super(e)}render(){const e=null===VRHTML||void 0===VRHTML?void 0:VRHTML.GetRecommendedOverlayRenderQuality();return s.createElement(v.xS,{name:\"/settings/steamvr/overlayRenderQuality_2\",label:(0,p.we)(\"#Settings_OverlayRenderQuality\"),items:[{value:o.pMg.Auto,sLabel:void 0!==e?(0,p.we)(\"#Settings_Auto_Parenthesized\",(0,p.we)(\"#Settings_\"+o.pMg[e])):(0,p.we)(\"#Settings_Auto\")},u.Sr.Separator,{value:o.pMg.Low,sLabel:(0,p.we)(\"#Settings_Low\")},{value:o.pM"
+    }
+  ],
+  "GetStoredTransform": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 589675,
+      "ctx": ";switch(d.SW.currentTheaterScreenAlignment){case d.tb.PlayArea:{const e=.75,n=-1.15;let a=(0,i.vxi)();return a.translation.y=e-t,a.translation.z=n-r,a}case d.tb.Dashboard:{let e=function(e,t){const r=VRHTML.GetStoredTransform(1,2);if(!r)return;const n=(0,i.vxi)();return n.translation.z=-e,n.translation.y=-.4-t,VRHTML.MultiplyTransforms(r,n)}(r,t);return e?(e.translation.y=Math.max(.6,e.translation.y),e):(e=function(e,t){const[r]=VRHTML.GetPose(\"/user/head\",i.muq.Standing);if(r&&(null==r?void 0:r.bPoseIsValid)&&(null==r?void 0:r.xfDeviceToAbsoluteTracking)){const n=-.4;"
+    }
+  ],
+  "IsSteamFrame": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 144022,
+      "ctx": "#DrawPerfCriteriaGameTextures_Depth\")},{value:2,sLabel:(0,p.we)(\"#DrawPerfCriteriaGameTextures_Motion\")}]})),l.createElement(\"hr\",null)):null}function q(){return(null===VRHTML||void 0===VRHTML?void 0:VRHTML.IsSteamFrame())?l.createElement(l.Fragment,null,l.createElement(\"div\",{className:\"SettingsItem\"},l.createElement(\"div\",{className:\"Label Title\"},(0,p.we)(\"#AppProvidedReprojection_Title\"))),l.createElement(\"div\",{className:\"SettingsItem\"},l.createElement(v.Al,{name:\"/settings/steamvr/depthReprojectionMesh\",label:(0,p.we)(\"#AppProvidedReprojection_Depth\")})),l."
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 144935,
+      "ctx": "t j=class extends v.yO{constructor(e){super(e)}render(){return this.props.active?l.createElement(l.Fragment,null,l.createElement(U,null),l.createElement(q,null),(null===VRHTML||void 0===VRHTML?void 0:VRHTML.IsSteamFrame())&&l.createElement(v.Al,{name:\"/settings/steamvr/videoCaptureViewStabilize\",label:(0,p.we)(\"#Settings_SpectatorViewStabilize\"),title:(0,p.we)(\"#Settings_SpectatorViewStabilizeDesc\")}),this.schemaComponents,l.createElement(\"hr\",null),l.createElement(W,null),VRHTML.VRMonitor.HasVRMonitor()&&l.createElement(l.Fragment,null,l.createElement(\"hr\",null)"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 146853,
+      "ctx": "\"))),l.createElement(J.y,{settingsPageName:$.Name}),l.createElement(J.Pj,null),l.createElement(J.EM,null),l.createElement(J.zU,null),l.createElement(J.rO,null),!(null===VRHTML||void 0===VRHTML?void 0:VRHTML.IsSteamFrame())&&l.createElement(v.Al,{name:m.qf,label:(0,p.we)(\"#Settings_HomeAppCheck\"),title:(0,p.we)(\"#Settings_HomeAppDesc\")}),!V.SW.isVRGamepadUI&&l.createElement(v.xS,{name:m.md,label:(0,p.we)(\"#Settings_Dashboard_Position\"),items:[{value:i.eod.Near,sLabel:(0,p.we)(\"#Settings_Near\")},{value:i.eod.Middle,sLabel:(0,p.we)(\"#Settings_Middle\")},{value:i.eod."
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 164724,
+      "ctx": ":\"Force Welcome in Quicklaunch\",name:\"/settings/dashboard/forceWelcomeScreen\"}),!1,!1,l.createElement(be,null),l.createElement(de,null),l.createElement(ae,null),(null===VRHTML||void 0===VRHTML?void 0:VRHTML.IsSteamFrame())&&l.createElement(l.Fragment,null,l.createElement(\"div\",{className:\"Subsection\"},l.createElement(\"div\",{className:\"SettingsItem\"},l.createElement(\"div\",{className:\"Label Title\"},\"Performance Assessment\")),H.p.refreshRatesAvailable&&l.createElement(v.ym,{name:\"/settings/steamvr/perfCriteriaDesiredFrameRate\",comparator:(e,t)=>Math.round(e)==Math.r"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 167801,
+      "ctx": "ck:\"center\"})}),0)}get currentBackgroundPath(){const e=g.HR.settings.get(\"/settings/steamvr/background\");return e||g.HR.systemInfo.default_background}render(){const e=this.currentBackgroundPath,t=[...VRHTML.IsSteamFrame()?[]:[{file:\"#A0A0A0FF\",tags:\"background\",preview:\"/dashboard/images/background_light_thumbnail.png\",publishedfileid:null},{file:\"#0D0D0DFF\",tags:\"background\",preview:\"/dashboard/images/background_dark_thumbnail.png\",publishedfileid:null}],...this.state.rBackgroundUGCItems.filter(((e,t)=>e.tags&&-1!=e.tags.indexOf(\"background\")))],r=t.find((t=>t.f"
+    },
+    {
+      "file": "systemui.js",
+      "pos": 174901,
+      "ctx": "me((e=>e.unIndex==o&&e.eClass==s.mo7.Controller)))&&this.forceUpdate()}render(){let e=[];e.push(r.createElement(de.tH,{key:\"loading\"},r.createElement(ge,null))),(null===VRHTML||void 0===VRHTML?void 0:VRHTML.IsSteamFrame())&&(e.push(r.createElement(de.tH,{key:\"guidedtour\"},r.createElement(Ke,null))),e.push(r.createElement(de.tH,{key:\"learningpanel\"},r.createElement(je.hZ,{mode:\"auto-show\"})))),e.push(r.createElement(de.tH,{key:\"dashboard\"},r.createElement(B.cQ,null))),e.push(r.createElement(de.tH,{key:\"desktopframes\"},r.createElement(He,null))),e.push(r.createElem"
+    }
+  ],
+  "MultiplyTransforms": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 589787,
+      "ctx": "ranslation.y=e-t,a.translation.z=n-r,a}case d.tb.Dashboard:{let e=function(e,t){const r=VRHTML.GetStoredTransform(1,2);if(!r)return;const n=(0,i.vxi)();return n.translation.z=-e,n.translation.y=-.4-t,VRHTML.MultiplyTransforms(r,n)}(r,t);return e?(e.translation.y=Math.max(.6,e.translation.y),e):(e=function(e,t){const[r]=VRHTML.GetPose(\"/user/head\",i.muq.Standing);if(r&&(null==r?void 0:r.bPoseIsValid)&&(null==r?void 0:r.xfDeviceToAbsoluteTracking)){const n=-.4;let a=VRHTML.CalcDashboardTransform(r.xfDeviceToAbsoluteTracking,!0);const s=(0,i.vxi)();return s.translation.z="
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 590185,
+      "ctx": "lid)&&(null==r?void 0:r.xfDeviceToAbsoluteTracking)){const n=-.4;let a=VRHTML.CalcDashboardTransform(r.xfDeviceToAbsoluteTracking,!0);const s=(0,i.vxi)();return s.translation.z=-e,s.translation.y=n-t,VRHTML.MultiplyTransforms(a,s)}}(r,t),e?(e.translation.y=Math.max(.6,e.translation.y),e):void 0)}default:return}}let St=dt=class extends o.Component{constructor(e){super(e),this.m_sMoveDevicePath=void 0,this.m_NudgeReactionHandle=void 0,this.m_DockLocationReactionHandle=void 0,this.m_StandingResetHandle=void 0,this.m_nDragSnapTimeoutHandle=void 0,this.m_xfDashboardSnapTran"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 592498,
+      "ctx": ".flScaleForActivePage*d.SW.dashboardScale-e.flPanelTranslationForResizeOrigin*e.flScaleForActivePage*d.SW.dashboardScale;if(null!=this.state.xfTransform){const e=null===VRHTML||void 0===VRHTML?void 0:VRHTML.MultiplyTransforms(this.state.xfTransform,Object.assign(Object.assign({},(0,i.vxi)()),{translation:(0,i.WiO)({y:r})}));this.setState({xfTransform:e})}})),this.m_StandingResetHandle=(0,s.reaction)((()=>d.SW.m_nStandingZeroPoseResetGeneration),((e,t)=>{window.setTimeout((()=>{var e,t,r;if((null===(r=null===(t=null===(e=this.props)||void 0===e?void 0:e.frame)||void 0=="
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596766,
+      "ctx": "king,location:i.yWq.LeftHand}),s&&this.state.sParentDevice!=u.Ww&&o.push({xf:s.xfDeviceToAbsoluteTracking,location:i.yWq.RightHand}),!n||0==o.length)return void this.scheduleNextDragSnapPulse();let l=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(n,this.state.xfTransform),this.pushTransform);const c=o.map((e=>{const t=VRHTML.ChangeBasis(l,e.xf),r=(0,i.Ujb)(t.translation);return Object.assign(Object.assign({},e),{fDistance:r})})),m={[i.yWq.Dashboard]:.3,[i.yWq.LeftHand]:.4,[i.yWq.RightHand]:.4,[i.yWq.World]:0,[i.yWq.Theater]:0,[i.yWq.Boot]:0};let p=null!==(t=c.filt"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 596792,
+      "ctx": "nd}),s&&this.state.sParentDevice!=u.Ww&&o.push({xf:s.xfDeviceToAbsoluteTracking,location:i.yWq.RightHand}),!n||0==o.length)return void this.scheduleNextDragSnapPulse();let l=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(n,this.state.xfTransform),this.pushTransform);const c=o.map((e=>{const t=VRHTML.ChangeBasis(l,e.xf),r=(0,i.Ujb)(t.translation);return Object.assign(Object.assign({},e),{fDistance:r})})),m={[i.yWq.Dashboard]:.3,[i.yWq.LeftHand]:.4,[i.yWq.RightHand]:.4,[i.yWq.World]:0,[i.yWq.Theater]:0,[i.yWq.Boot]:0};let p=null!==(t=c.filter((e=>{if(!Number.isFinit"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 598938,
+      "ctx": ");break;default:a={xfDeviceToAbsoluteTracking:(0,i.vxi)(),vVelocity:{x:0,y:0,z:0},eTrackingResult:i.MVt.TrackingResult_Running_OK,bPoseIsValid:!0}}if(!a||!n)return;t.docking.SetBeingDragged(!0);let s=VRHTML.MultiplyTransforms(a.xfDeviceToAbsoluteTracking,this.state.xfTransform),o=VRHTML.ChangeBasis(s,n.xfDeviceToAbsoluteTracking);this.setState({xfTransform:o,sParentDevice:this.m_sMoveDevicePath,dragCanSnapToDashboard:!1},this.computeDragSnapDestination),window.addEventListener(\"mouseup\",this.endFloatingWindowMove)}))}endFloatingWindowMove(){return(0,n.sH)(this,void 0,v"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 600425,
+      "ctx": "ndFloatingWindowMoveInternal: missing pose, ending drag in place\",this.m_sMoveDevicePath,t),e.docking.SetBeingDragged(!1),void window.removeEventListener(\"mouseup\",this.endFloatingWindowMove);const c=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(l.xfDeviceToAbsoluteTracking,this.state.xfTransform),this.pushTransform),d=VRHTML.ChangeBasis(c,a.xfDeviceToAbsoluteTracking);this.m_flPushDistance=0,(0,s.runInAction)((()=>{this.setState({xfTransform:d,sParentDevice:_t(t),nGrabScaleResetGeneration:this.state.nGrabScaleResetGeneration+1}),e.docking.SetPreviewDockLocation("
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 600451,
+      "ctx": "al: missing pose, ending drag in place\",this.m_sMoveDevicePath,t),e.docking.SetBeingDragged(!1),void window.removeEventListener(\"mouseup\",this.endFloatingWindowMove);const c=VRHTML.MultiplyTransforms(VRHTML.MultiplyTransforms(l.xfDeviceToAbsoluteTracking,this.state.xfTransform),this.pushTransform),d=VRHTML.ChangeBasis(c,a.xfDeviceToAbsoluteTracking);this.m_flPushDistance=0,(0,s.runInAction)((()=>{this.setState({xfTransform:d,sParentDevice:_t(t),nGrabScaleResetGeneration:this.state.nGrabScaleResetGeneration+1}),e.docking.SetPreviewDockLocation(void 0),e.docking.SetDockL"
+    }
+  ],
+  "NextSGID": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 319067,
+      "ctx": ".id}\") at the same time another component with that SGID is mounted. Using a new SGID.`,this.m_SGID),this.m_SGID=i._E)),this.m_SGID==i._E&&(this.m_SGID=null!==(t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.NextSGID())&&void 0!==t?t:i._E,r&&this.BCanUseStableSGIDs()&&g.s_mapStableSGIDsForIDs.set(e.id,this.m_SGID))}setBuildNodeOverride(e){this.m_buildNodeOverride=e}getSGID(){return this.m_SGID}getNodeType(){return\"base\"}getID(){return this.props.id}createSgNode(e){return(0,a.Tu)(this.getNodeType(),e)}getCurrentRootElement(){return this.m_domRef.current}compone"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 488571,
+      "ctx": "e\",className:p().ResizeSVG},r),i.createElement(\"path\",{stroke:\"currentColor\",d:a,strokeWidth:\"6\",strokeLinecap:\"round\"}))}let g=class extends i.Component{constructor(e){super(e),this.m_grabHandleSGID=VRHTML.NextSGID(),this.state={bActive:!1}}startResize(){this.setState({bActive:!0}),window.addEventListener(\"mouseup\",this.endResize)}endResize(){this.setState({bActive:!1}),window.removeEventListener(\"mouseup\",this.endResize)}render(){var e;if(null==(null===(e=this.props)||void 0===e?void 0:e.scale))return null;return i.createElement(u.dLy,{ignore_parent_scale:!"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 590635,
+      "ctx": "cationReactionHandle=void 0,this.m_StandingResetHandle=void 0,this.m_nDragSnapTimeoutHandle=void 0,this.m_xfDashboardSnapTransform=void 0,this.m_PanelHeightReactionHandle=void 0,this.m_grabHandleSGID=VRHTML.NextSGID(),this.m_bRefreshingCompositorSnapState=!1,this.m_bEndingFloatingWindowMove=!1,this.m_sDragSnapLineOriginID=\"xf\"+Math.random().toString(),this.m_sUnpushedOriginID=\"xf\"+Math.random().toString(),this.m_sPushedOriginID=\"xf\"+Math.random().toString(),this.m_flPushDistance=0,this.state={xfTransform:void 0,sParentDevice:_t(this.props.frame.docking.dockLo"
+    },
+    {
+      "file": "systemui.js",
+      "pos": 24750,
+      "ctx": "Key())&&void 0!==e?e:v}function I(e){b.push(e),T()}function F(e){(e=Math.max(null!=e?e:S,S))!=S&&(S=e,T())}function k(e){e!=M&&(M=e,T())}function T(){null==y&&(y=null===VRHTML||void 0===VRHTML?void 0:VRHTML.NextSGID()),L||(L=window.setTimeout((()=>(0,n.sH)(this,void 0,void 0,(function*(){let e=document.body;g&&(e=g);const t=h({currentPanel:null,bInsideReparentedPanel:!1,bShouldAbort:!1},e);let o;o=E?{type:\"systemui-root\",children:t,properties:{eDashboardRelatch:S,bContinuousRelatch:M,sceneColorCorrection:f,sgid:y}}:{type:\"group\",children:t,properties:{sgid:y}"
+    }
+  ],
+  "QuitSceneApp": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 459068,
+      "ctx": "ceived RequestAppQuit response:\",e);const t=2==e.result;this.m_nExitButtonClicksSinceShowingSteamQuitDialog=0,this.m_sSteamQuickDialogStatus=t?\"confirmed\":\"none\",this.m_bShowSpinner=t}));break;case 3:VRHTML.QuitSceneApp()}}}(0,n.Cg)([a.observable],p.prototype,\"m_bShowSpinner\",void 0),(0,n.Cg)([a.observable],p.prototype,\"m_sSteamQuickDialogStatus\",void 0),(0,n.Cg)([a.observable],p.prototype,\"m_nExitButtonClicksSinceShowingSteamQuitDialog\",void 0),(0,n.Cg)([d.o],p.prototype,\"BCanPerformCloseMethod\",null),(0,n.Cg)([a.computed],p.prototype,\"closeMethod\",null),(0,n.Cg"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 626868,
+      "ctx": "TurnOffController\"),onClick:()=>{null===VRHTML||void 0===VRHTML||VRHTML.TurnOffVRController(),ot.Z.showPopoverMenu(0)}}),n&&r&&o.createElement(Te,{label:p,onClick:()=>{null===VRHTML||void 0===VRHTML||VRHTML.QuitSceneApp(),ot.Z.showPopoverMenu(0)}}),o.createElement(Te,{label:(0,c.we)(\"#PowerMenuExitVR\"),onClick:()=>null===VRHTML||void 0===VRHTML?void 0:VRHTML.QuitSteamVR()}),a&&o.createElement(Te,{label:(0,c.we)(\"#PowerMenuShutdown\"),onClick:()=>null===VRHTML||void 0===VRHTML?void 0:VRHTML.SystemShutdownMachine()})))}renderPopoverMenu(e){return o.createElement(\"di"
+    }
+  ],
+  "RegisterForAllOverlayInfo": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 504560,
+      "ctx": "layCreated((e=>{2!=(null==e?void 0:e.eOverlayType)&&l.Info(\"Created:\",e.sOverlayKey)})),this.RegisterForOverlayDestroyed((e=>{2!=(null==e?void 0:e.eOverlayType)&&l.Info(\"Destroyed:\",e.sOverlayKey)})),VRHTML.RegisterForAllOverlayInfo(this.OnAllOverlayInfo)}))}BOverlayExists(e){return this.m_mapAllOverlays.has(e)}GetOverlayInfo(e){return this.m_mapAllOverlays.get(e)}get overlays(){return Array.from(this.m_mapAllOverlays.values())}get overlayKeys(){return Array.from(this.m_mapAllOverlays.values()).map((e=>e.sOverlayKey))}GetOverlayFlag(e,t){const r=this.GetOverlayInfo(e);if(r)re"
+    }
+  ],
+  "RegisterForFrameDockLocationRequests": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 673015,
+      "ctx": "eDashboardFramesUpdate(e)})),this.onRemoteDashboardFramesUpdate(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRPathProperties.GetStringPathProperty(T)),null===(t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForFrameDockLocationRequests)||void 0===t||t.call(VRHTML,this.onFrameDockLocationRequest),null===VRHTML||void 0===VRHTML||VRHTML.VRPathProperties.RegisterForStringPathPropertyChangedEvents(P,(e=>{this.onRemoteUnifiedDashboardStateUpdate(e)})),this.onRemoteUnifiedDashboardStateUpdate(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRPathProperties.GetStringPathProperty(P)),null=="
+    }
+  ],
+  "RegisterForHmdFrameRateChanged": [
+    {
+      "file": "systemui.js",
+      "pos": 39723,
+      "ctx": "=VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForStandingZeroPoseReset)||void 0===o||o.call(VRHTML,(()=>{this.m_nStandingZeroPoseResetGeneration+=1})),null===(n=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForHmdFrameRateChanged)||void 0===n||n.call(VRHTML,(e=>{this.m_nHMDFrameRate=e})),(0,l.reaction)((()=>this.visibilityState),((e,t)=>{const o=0!=e,n=0!=t,r=L.Mg.m_bIsVRLinkServer&&L.Mg.unifiedDashboardEnabled;n==o||r||m.u.Instance.playSound(o?m.j.DashboardOpen:m.j.DashboardClose)})),(0,l.reaction)((()=>this.isFullyVisible),(e=>{null===VRHTML||void 0===VRHTML||VRHTML.VRCl"
+    }
+  ],
+  "RegisterForOverlayThumbnailsChanged": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 608572,
+      "ctx": "Implementation(\"ShowOverlay\",(e=>{this.onShowOverlayRequestFromSteam(e)}))}componentDidMount(){window.Dashboard=this,this.m_dashboardThumbnailsChangedEventHandle=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForOverlayThumbnailsChanged((()=>this.forceUpdate())),this.GetDesiredInitialOverlayKey()&&(this.m_bWaitingOnInitialOverlayToAutoShow=!0),this.m_appStateChangedAutorunDisposer=(0,s.autorun)((()=>{var e,t,r;const n=v.G.Instance.SceneApplicationState,a=n!=i.HWH.None,s=this.m_ePreviousSceneApplicationState!=i.HWH.None;if(a&&!s)d.SW.HideTheaterOverlay();else if(!a&&s&&!M.JJ.isThe"
+    }
+  ],
+  "RegisterForSceneApplicationStateChangedEvents": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 261608,
+      "ctx": "licationStateChangedEventHandle=null,this.m_mapSelectedAppKeys={},this.m_mapCallbacks={},this.runningAppKey=void 0,this.m_sceneApplicationStateChangedEventHandle=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForSceneApplicationStateChangedEvents(this.onSceneApplicationStateChanged),this.onSceneApplicationStateChanged(),(0,u.makeObservable)(this)}theresNoDestructor(){var e;null===(e=this.m_sceneApplicationStateChangedEventHandle)||void 0===e||e.unregister()}register(e,t){this.m_mapCallbacks[e]=t,t(this.m_mapSelectedAppKeys[e]||this.runningAppKey)}unregister(e){delete this.m_mapCallbacks[e]"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 372003,
+      "ctx": "ationStateChangedEventHandle=null,(0,o.makeObservable)(this)}Init(){return(0,n.sH)(this,void 0,void 0,(function*(){this.m_sceneApplicationStateChangedEventHandle=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForSceneApplicationStateChangedEvents(this.onSceneApplicationStateChanged),yield this.UpdateApplications()}))}onSceneApplicationStateChanged(){this.UpdateApplications()}SetApplicationMap(e){var t;this.m_Applications.clear(),null===(t=e.apps)||void 0===t||t.forEach((e=>{this.m_Applications.set(e.key,e)}))}UpdateApplications(){return(0,n.sH)(this,void 0,void 0,(function*(){yield this.Qu"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 413532,
+      "ctx": "ponsiveTimeout=void 0,this.m_noAppTimeout=void 0,this.m_mountedTime=void 0,this.m_mountedTime=(new Date).getTime(),this.m_sceneApplicationStateChangedEventHandle=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForSceneApplicationStateChangedEvents(this.updateTransitionState),this.updateTransitionState(),(0,a.makeObservable)(this)}updateTransitionState(){var e;if(!(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRApplications))return;let t=null===(e=VRHTML.VRApplications)||void 0===e?void 0:e.GetSceneApplicationState();t==i.HWH.Starting?(this.m_sceneApplicationState==i.HWH.Quitting&&this.reset"
+    }
+  ],
+  "RegisterForStandingZeroPoseReset": [
+    {
+      "file": "systemui.js",
+      "pos": 39555,
+      "ctx": "oChanged),null===(t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForSystemBehaviorFlags)||void 0===t||t.call(VRHTML,this.onSystemBehaviorFlags),null===(o=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForStandingZeroPoseReset)||void 0===o||o.call(VRHTML,(()=>{this.m_nStandingZeroPoseResetGeneration+=1})),null===(n=null===VRHTML||void 0===VRHTML?void 0:VRHTML.RegisterForHmdFrameRateChanged)||void 0===n||n.call(VRHTML,(e=>{this.m_nHMDFrameRate=e})),(0,l.reaction)((()=>this.visibilityState),((e,t)=>{const o=0!=e,n=0!=t,r=L.Mg.m_bIsVRLinkServer&&L.Mg.unifiedDashboardEnable"
+    }
+  ],
+  "SceneAppRunning": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 625726,
+      "ctx": "g(\"dock_overlay_requested: unknown overlay_key\",e)}onLegacyQuickLaunchButtonClick(){this.switchToOverlayInternal(u.Sx)}renderLegacyPowerMenu(){var e,t;const r=!!(null===VRHTML||void 0===VRHTML?void 0:VRHTML.SceneAppRunning()),n=_.HR.settings.get(\"/settings/dashboard/allowAppQuitting\"),a=null===(e=K.DZ[3])||void 0===e?void 0:e.isValid;let s=!1;if(VRHTML){VRHTML.VROverlay.GetPrimaryDashboardDevice()>=0&&(s=null!==(t=VRHTML.VRProperties.GetBoolProperty(VRHTML.VROverlay.GetPrimaryDashboardDevice(),i.fD8.DeviceCanPowerOff_Bool))&&void 0!==t&&t)}const l=v.G.Instance.Scene"
+    }
+  ],
+  "VRDashboardManager": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 217608,
+      "ctx": ",n.Cg)([a.o],P.prototype,\"OnUpdateComponentStates\",null),P=(0,n.Cg)([s.PA],P);var V,I,L=r(917),O=r(3606);const k=(0,s.PA)((()=>{const e=\"managevivetrackers\";if(!(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.ShouldShowTrackerUI()))return null;const t=l.HR.routePageSection==e;return i.createElement(i.Fragment,null,i.createElement(\"div\",{className:\"SettingsItem Button\"},i.createElement(c.$,{className:\"ButtonControl\",onClick:()=>l.HR.setRoutePageSection(e)},(0,o.we)(\"#Settings_General_ShowTrackerUI\"))),t&&i.createElement(u.bB,{header:(0,o.we)(\"#Settings_"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 281744,
+      "ctx": "ML&&VRHTML.VRProperties.GetBoolProperty(\"/user/head\",o.fD8.DisplayAllowNightMode_Bool)?s.createElement(v.Al,{label:(0,p.we)(\"#Settings_NightModeCheck\"),title:(0,p.we)(\"#Settings_NightModeDesc\"),value:VRHTML.VRDashboardManager.GetNightModeEnabled(),onChange:e=>{null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SetNightModeEnabled(e),this.forceUpdate()}}):null}}const H=(0,a.PA)((()=>{if(!VRHTML)return null;let e=!0;if(VRHTML.VRProperties.GetBoolProperty(\"/user/head\",o.fD8.HasDriverDirectModeComponent_Bool)){const t=VRHTML.VRProperties.GetStringProperty(\"/user/hea"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 281837,
+      "ctx": "teElement(v.Al,{label:(0,p.we)(\"#Settings_NightModeCheck\"),title:(0,p.we)(\"#Settings_NightModeDesc\"),value:VRHTML.VRDashboardManager.GetNightModeEnabled(),onChange:e=>{null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SetNightModeEnabled(e),this.forceUpdate()}}):null}}const H=(0,a.PA)((()=>{if(!VRHTML)return null;let e=!0;if(VRHTML.VRProperties.GetBoolProperty(\"/user/head\",o.fD8.HasDriverDirectModeComponent_Bool)){const t=VRHTML.VRProperties.GetStringProperty(\"/user/head\",o.fD8.TrackingSystemName_String),r=VRHTML.VRProperties.GetStringProperty(\"/user/head\",o.fD"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 458570,
+      "ctx": "ttonIcon;return null!=e||(e=31),e}RequestClose(){var e,t;switch(this.closeMethod){case 0:null===(t=(e=this.componentProps).onCloseRequested)||void 0===t||t.call(e),this.m_bShowSpinner=!0;break;case 1:VRHTML.VRDashboardManager.SendOverlayClosed(this.componentProps.overlayKey);break;case 2:this.m_nExitButtonClicksSinceShowingSteamQuitDialog++,this.m_sSteamQuickDialogStatus=\"awaiting-response\",c.p.Steam.RequestAppQuit({app_id:this.componentProps.appID},{nTimeoutMS:0}).then((e=>{this.Log.Debug(\"Received RequestAppQuit response:\",e);const t=2==e.result;this.m_nExitButtonCli"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 484007,
+      "ctx": "ice index for controller docking target:\",o.yWq[e])}SetInTheater(e=!0){this.frame.docking.SetDockLocation(o.yWq.Theater),e&&!(0,c.gp)(this.frame,s.SW.mainSteamFrame)&&(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboardForOverlay\",!1))}}function p(e){const{dockLocation:t,forFrameID:r}=e,n=i.useId();return i.useLayoutEffect((()=>l.JJ.RegisterFrameDockLocation(t,n,r).Unregister),[t,n,r]),i.createElement(o.dLy,{id:n})}function h(e){switch(e){case o.yWq.Theater:case o.yWq.LeftHand:case o.yWq.RightHand:case o.yWq.Boot:return!0;case o.y"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 492528,
+      "ctx": "rame if not activeVRLinkServer\",this.frame.title,e)}SetInTheater(e=!0){this.frame.docking.SetDockLocation(a.yWq.Theater),e&&!(0,u.gp)(this.frame,s.SW.mainSteamFrame)&&(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboardForOverlay\",!1))}}(0,n.Cg)([i.observable],h.prototype,\"m_bJustFloatedFromDashboard\",void 0),(0,n.Cg)([i.computed],h.prototype,\"dockLocation\",null),(0,n.Cg)([i.computed],h.prototype,\"visualDockLocation\",null),(0,n.Cg)([i.action],h.prototype,\"SetPreviewDockLocation\",null),(0,n.Cg)([i.computed],h.prototype,\"previewDock"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 533714,
+      "ctx": "ExitApp(){var e,t;null===(t=null===(e=this.context)||void 0===e?void 0:e.frame)||void 0===t||t.closing.RequestClose()}onReturnToGame(){D.c.roomViewShowing&&(0,D.s)(!1),null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"return_to_game\",!1)}onOpenAppControllerBindingSettings(){const e=v.G.Instance.SceneAppKey;f.r.OpenDeepLink(f.$.Name,e)}onOpenAppVideoSettings(){const e=v.G.Instance.SceneAppKey;y.xR.OpenDeepLink(y.a5.Name,e)}onClearPerfCriteriaStatus(){this.m_mailbox.SendMessage(i.Wqq,{type:\"reset_perf_criteria_status\"})}setFramePage(e){var t,r;this"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 586192,
+      "ctx": "l(m,void 0,\"GameFrame now alive\"),!R&&null!==(t=_.HR.settings.get(\"/settings/dashboard/autoShowGameTheater\"))&&void 0!==t&&t&&(m.docking.SetInTheater(),null===(r=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager)||void 0===r||r.HideDashboard(\"GameFrame now alive, auto-theatering\",!1))}))),[m,R]);if(r.bVRSceneApp&&v.G.Instance.SceneAppIsVRLink)return null;const W=null!==(t=null==a?void 0:a.unFlags)&&void 0!==t?t:0;return r.bVRSceneApp||a&&a.bHasTexture&&32768&W?o.createElement(M.wI,{ref:p,title:(null==a?void 0:a.sOverlayName)||r.strName,icon:{appid:d.SW.is"
+    },
+    {
+      "file": "systemui.js",
+      "pos": 159820,
+      "ctx": "((function(e){const{window:t}=e,[o,n]=r.useState(void 0);r.useEffect((()=>{if(o)return Se.Q.OnDesktopWindowFrameCreated(o),()=>Se.Q.OnDesktopWindowFrameDestroyed(o)}),[o]);const i=r.useCallback((()=>{VRHTML.VRDashboardManager.SendOverlayClosed(t.overlay_key)}),[]),a=se.Q.GetOverlayInfo(t.overlay_key);return a?1!=a.eOverlayType?null:32768&a.unFlags?r.createElement(ne.wI,{title:t.title,icon:{enum:18,hwnd:Number.parseInt(t.hwnd)},ref:n,componentProps:{closing:{onCloseRequested:i,closeButtonLabel:(0,y.we)(\"#CloseView\")},size:{forcedUniformDashboardHeight:Me.ax,allowResizin"
+    }
+  ],
+  "VROverlay": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 169997,
+      "ctx": "*e[t+2])})`}}const we=(0,o.PA)((function(){var e,t,r,n,i,a,s;const[o,c]=l.useState(!1),d=null!==(e=g.HR.settings.get(m._b))&&void 0!==e?e:0,_=null===(r=null===(t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlay)||void 0===t?void 0:t.GetAuroraPalettes)||void 0===r?void 0:r.call(t),b=null!==(n=g.HR.settings.get(m._c))&&void 0!==n?n:\"\",S=b&&null!==(s=null===(a=null===(i=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlay)||void 0===i?void 0:i.ParseAuroraUserColor)||void 0===a?void 0:a.call(i,b))&&void 0!==s?s:null;console.log(\" nCurrentAuroraIndex\",d),co"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 170211,
+      "ctx": "ay)||void 0===t?void 0:t.GetAuroraPalettes)||void 0===r?void 0:r.call(t),b=null!==(n=g.HR.settings.get(m._c))&&void 0!==n?n:\"\",S=b&&null!==(s=null===(a=null===(i=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlay)||void 0===i?void 0:i.ParseAuroraUserColor)||void 0===a?void 0:a.call(i,b))&&void 0!==s?s:null;console.log(\" nCurrentAuroraIndex\",d),console.log(\" sAuroraUserColor\",b);let y=null;d==fe?y=S:d>=0&&d<_.length&&(y=_[d]);const f=Re(y),R=l.useRef(void 0),w=l.useRef(void 0);o||(R.current=d,w.current=f);const M=()=>{c(!1),g.HR.SetSettingsValue(m._b,R.curr"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 348101,
+      "ctx": "apticSuppressed(e){return Array.from(this.m_mapSuppressedHaptics.values()).some((t=>t.has(e)))}triggerHaptic(e){(0,n.R$f)()!=n.OH$.Overlay||this.isHapticSuppressed(e)||null===VRHTML||void 0===VRHTML||VRHTML.VROverlay.TriggerOverlayHapticEffect(VRHTML.VROverlay.ThisOverlayHandle(),e)}}s.s_Instance=null},260:(e,t,r)=>{\"use strict\";r.d(t,{j:()=>s});var n=r(6540),i=r(961);const a=e=>n.createElement(\"div\",{style:{position:\"fixed\",left:e.x,top:e.y,width:e.width,height:e.height,zIndex:90019001}});class s extends n.Component{render(){const e=document.body.getBoundingC"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 348145,
+      "ctx": "mapSuppressedHaptics.values()).some((t=>t.has(e)))}triggerHaptic(e){(0,n.R$f)()!=n.OH$.Overlay||this.isHapticSuppressed(e)||null===VRHTML||void 0===VRHTML||VRHTML.VROverlay.TriggerOverlayHapticEffect(VRHTML.VROverlay.ThisOverlayHandle(),e)}}s.s_Instance=null},260:(e,t,r)=>{\"use strict\";r.d(t,{j:()=>s});var n=r(6540),i=r(961);const a=e=>n.createElement(\"div\",{style:{position:\"fixed\",left:e.x,top:e.y,width:e.width,height:e.height,zIndex:90019001}});class s extends n.Component{render(){const e=document.body.getBoundingClientRect();let t=null;if(this.props.element"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 448544,
+      "ctx": "n&&!g.T.isOOBE&&!_.N.isLocked&&\"recovery\"!=d.SW.bareSessionMode)return{display_name:(0,o.we)(\"#Toggle_Room_View\"),invocation:2,active:p.c.roomViewShowing,enabled:null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlayInternal.HasCameraRoomViewCapability(),icon:{enum:2},icon_active:{enum:1}}}),(e=>{(0,p.s)(null!=e&&e)}))}))}OnRemoteDashboardActionInvoked(e){var t;if(v.Mg.m_bIsVRLinkServer&&v.Mg.unifiedDashboardEnabled)try{const r=f.WG.deserializeBinary(e.data);w.Debug(\"OnRemoteDashboardActionInvoked\",w.IsDebugEnabled()&&r.toObject()),null===(t=B.GetAction(r.acti"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 475362,
+      "ctx": "yed.Register((0,i.reaction)((()=>this.isKeyboardVisible&&!this.framePage.isActiveAndVisiblePage),(()=>this.HideKeyboard())))}ShowKeyboard(){if(this.supportsKeyboardInput&&!this.isKeyboardVisible){try{VRHTML.VROverlay.ShowKeyboardForOverlay(this.keyboardInputOverlayKey,a.XlW.Normal,a.ba0.SingleLine,a.QRg.Minimal|a.QRg.HideDoneKey|a.QRg.ShowArrowKeys,\"\",1024,\"\",0),VRHTML.VROverlay.SetKeyboardPositionForOverlay(this.keyboardInputOverlayKey,{})}catch(e){console.error(e)}this.framePage.inputFocus.PushInputFocus()}}HideKeyboard(){this.isKeyboardVisible&&VRHTML.VROve"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 475527,
+      "ctx": "nput&&!this.isKeyboardVisible){try{VRHTML.VROverlay.ShowKeyboardForOverlay(this.keyboardInputOverlayKey,a.XlW.Normal,a.ba0.SingleLine,a.QRg.Minimal|a.QRg.HideDoneKey|a.QRg.ShowArrowKeys,\"\",1024,\"\",0),VRHTML.VROverlay.SetKeyboardPositionForOverlay(this.keyboardInputOverlayKey,{})}catch(e){console.error(e)}this.framePage.inputFocus.PushInputFocus()}}HideKeyboard(){this.isKeyboardVisible&&VRHTML.VROverlay.HideKeyboard()}ToggleKeyboard(){this.isKeyboardVisible?this.HideKeyboard():this.ShowKeyboard()}}(0,n.Cg)([i.computed],c.prototype,\"keyboardInputOverlayKey\",null"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 475716,
+      "ctx": "1024,\"\",0),VRHTML.VROverlay.SetKeyboardPositionForOverlay(this.keyboardInputOverlayKey,{})}catch(e){console.error(e)}this.framePage.inputFocus.PushInputFocus()}}HideKeyboard(){this.isKeyboardVisible&&VRHTML.VROverlay.HideKeyboard()}ToggleKeyboard(){this.isKeyboardVisible?this.HideKeyboard():this.ShowKeyboard()}}(0,n.Cg)([i.computed],c.prototype,\"keyboardInputOverlayKey\",null),(0,n.Cg)([i.computed],c.prototype,\"supportsKeyboardInput\",null),(0,n.Cg)([i.computed],c.prototype,\"showKeyboardButtonInFrameControls\",null),(0,n.Cg)([i.computed],c.prototype,\"isKeyboardVi"
+    },
+    {
+      "file": "systemui.js",
+      "pos": 19044,
+      "ctx": ",t){var o;let n={type:e,properties:{}};return t.id&&(n.properties.id=null!==(o=V(t.id))&&void 0!==o?o:void 0),n.properties.sgid=l(t,\"sgid\"),n}function p(){return null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlay.ThisOverlayHandle()}function h(e,t){let[o,n]=function(e,t){let o=t.buildNode;if(o)return o(e,t);let n=Object.assign({},e),r=null;switch(t.nodeName.toUpperCase()){case\"VSG-TRANSFORM\":r=m(\"transform\",t),r.properties.translation=a(t,\"translation\"),r.properties.rotation=a(t,\"rotation\"),r.properties.scale=a(t,\"scale\"),r.properties[\"curvature-pitch\"]=s("
+    }
+  ],
+  "VROverlayInternal": [
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 448544,
+      "ctx": "n&&!g.T.isOOBE&&!_.N.isLocked&&\"recovery\"!=d.SW.bareSessionMode)return{display_name:(0,o.we)(\"#Toggle_Room_View\"),invocation:2,active:p.c.roomViewShowing,enabled:null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlayInternal.HasCameraRoomViewCapability(),icon:{enum:2},icon_active:{enum:1}}}),(e=>{(0,p.s)(null!=e&&e)}))}))}OnRemoteDashboardActionInvoked(e){var t;if(v.Mg.m_bIsVRLinkServer&&v.Mg.unifiedDashboardEnabled)try{const r=f.WG.deserializeBinary(e.data);w.Debug(\"OnRemoteDashboardActionInvoked\",w.IsDebugEnabled()&&r.toObject()),null===(t=B.GetAction(r.action_id())"
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 510864,
+      "ctx": "79:(e,t,r)=>{\"use strict\";r.d(t,{c:()=>m,s:()=>c});var n=r(1635),i=r(3236),a=r(7813),s=r(1333),o=r(3606),l=r(5026),u=r(4367);function c(e){var t;return null===(t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlayInternal)||void 0===t?void 0:t.SetCameraRoomViewEnabled(e)}class d{constructor(){this.m_bAllowCameraToggle=null,this.m_bAllowLightSourceFrequency=null,this.m_bCameraCompatibilityModes=null,this.m_bSupportsRoomViewDepthProjection=null,this.m_eCameraExposure=null,this.m_bDebugCameraViewEnabled=!1,this.m_bRoomViewMonochrome=void 0,this.m_bSupportsEyeTracking="
+    },
+    {
+      "file": "chunk~8012d0c89.js",
+      "pos": 633545,
+      "ctx": "ImageUrl:\"/dashboard/images/icons/svr_eye.svg\",label:(0,c.we)(\"#Toggle_Room_View\"),onClick:()=>{(0,D.s)(!D.c.roomViewShowing)},active:D.c.roomViewShowing,enabled:null===VRHTML||void 0===VRHTML?void 0:VRHTML.VROverlayInternal.HasCameraRoomViewCapability()}),o.createElement(Oe,{active:ot.Z.isLegacyVolumeTrayActive,onShowTray:()=>ot.Z.showPopoverMenu(3),onHideTray:()=>ot.Z.showPopoverMenu(0),onMouseEnter:ot.Z.clearPopoverMenuTimeout,onMouseLeave:()=>ot.Z.startPopoverMenuTimeout(500)})),E&&o.createElement(Pe,{icon:{enum:16},active:(null===(w=null===(R=d.SW.activeFrame)||v"
+    }
+  ]
+}

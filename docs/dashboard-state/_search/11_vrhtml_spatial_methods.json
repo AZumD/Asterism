@@ -1,0 +1,22 @@
+[
+  "CalcDashboardTransform",
+  "ChangeBasis",
+  "GetCurrentSceneFocusAppName",
+  "GetPose",
+  "GetRecommendedOverlayRenderQuality",
+  "GetStoredTransform",
+  "IsSteamFrame",
+  "MultiplyTransforms",
+  "NextSGID",
+  "QuitSceneApp",
+  "RegisterForAllOverlayInfo",
+  "RegisterForFrameDockLocationRequests",
+  "RegisterForHmdFrameRateChanged",
+  "RegisterForOverlayThumbnailsChanged",
+  "RegisterForSceneApplicationStateChangedEvents",
+  "RegisterForStandingZeroPoseReset",
+  "SceneAppRunning",
+  "VRDashboardManager",
+  "VROverlay",
+  "VROverlayInternal"
+]

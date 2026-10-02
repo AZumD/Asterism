@@ -1,0 +1,21 @@
+{
+  "DashboardPower_Header": "System",
+  "Jump_To_DashboardBar": "Jump to dashboard bar",
+  "VR_Controller_Bindings": "VR Controller Bindings",
+  "Controller_Bindings": "Controller Bindings",
+  "MultitaskingView": "Multitasking View",
+  "DockHere": "Dock Here",
+  "DockOnLeftController": "Dock on Left Controller",
+  "UndockFromLeftController": "Undock from Left Controller",
+  "DockedOnLeftController": "Docked on left controller.",
+  "DockOnRightController": "Dock on Right Controller",
+  "UndockFromRightController": "Undock from Right Controller",
+  "DockedOnRightController": "Docked on right controller.",
+  "DockOnDashboard": "Dock on Dashboard",
+  "ReturnToDashboard": "Return to Dashboard",
+  "FloatInWorld": "Float in World",
+  "ShowTheaterScreen": "Show Theater Screen",
+  "HideTheaterScreen": "Hide Theater Screen",
+  "ViewInTheater": "View in Theater",
+  "Undock": "Undock"
+}

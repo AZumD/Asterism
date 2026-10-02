@@ -1,0 +1,16 @@
+Options are: --anchortopose --appmanifest --background --chaperonesetuptest 
+--cmd --cmdasync --cmdhmd --compositorcmd --dock-overlay --dump-positions 
+--dumpapps --dumpsensors --dumpsensorstomaya --events --exitafterone 
+--fastposes --gametheatersample --getanchor --handlewakeup --help 
+--hidedashboard --info --is-pid-present --lighthousedebugstring --notify 
+--overlay --overlays --pollcontrollers --pollhmdpresent --pollinit --pollposes 
+--predictiontime --prelaunch --printexportlivetobuffer --prop --recenter 
+--reload-shaders --replay --resetroomheight --resetroomsetup --rewind 
+--screenshot --send-vrevent --set-settings-bool --set-settings-float 
+--set-settings-int --set-settings-string --set-vsync-to-photons-offset-ms 
+--settings-bool --settings-float --settings-int --settings-string 
+--showdashboard --showevents --showmodels --spamhaptics --speedprops 
+--startcapture --startlighthouserecording --stats --statsLoop --stopcapture 
+--stoplighthouserecording --testdisabledashboard --testmessageoverlay 
+--testpipe --toggle-overlay-flag --toggle-theater-stereo --universe --util 
+--version --waitforpose --waitforquit --watchdog 

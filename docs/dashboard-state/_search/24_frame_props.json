@@ -1,0 +1,17 @@
+[
+  "CreateAction",
+  "OnDestroyed",
+  "activePage",
+  "docking",
+  "frameID",
+  "icon",
+  "inputFocus",
+  "isActiveDashboardFrame",
+  "isCurrentlyVisible",
+  "logPrefix",
+  "pages",
+  "panels",
+  "protoForVRLink",
+  "size",
+  "title"
+]

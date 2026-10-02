@@ -3,14 +3,15 @@
 Source: `pointer/driver/driver_asterism_pointer.cpp`  
 Install: `pointer/driver/install.sh`
 
+## Status
+
+**Legacy / experimental fallback.** Not part of Dashboard Manager persistence.
+Do not auto-invoke.
+
 ## Purpose
 
 SteamVR external driver that exposes a virtual controller. `asterism-place`
-drives it over the abstract datagram socket `@asterism_pointer` to laser-grab
-and move floating dashboard panels (gamescope PerWindow desktops).
-
-Adapted from FrameTop `ft_pointer` ([AZumD/frametop](https://github.com/AZumD/frametop));
-Asterism-owned binary and socket name — no FrameTop runtime dependency.
+drives it over `@asterism_pointer` to laser-grab floating dashboard panels.
 
 ## Install
 

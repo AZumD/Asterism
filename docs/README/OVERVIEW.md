@@ -21,11 +21,14 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `layout/layout.py` | [LAYOUT.md](LAYOUT.md) |
 | `scripts/asterism-layout` | [ASTERISM-LAYOUT.md](ASTERISM-LAYOUT.md) |
 | `pointer/helper/asterism-overlay-inspect.cpp` | [ASTERISM-OVERLAY-INSPECT.md](ASTERISM-OVERLAY-INSPECT.md) |
-| `pointer/helper/asterism-place.cpp` | [ASTERISM-PLACE.md](ASTERISM-PLACE.md) |
+| `pointer/helper/asterism-place.cpp` | [ASTERISM-PLACE.md](ASTERISM-PLACE.md) (**legacy** fallback) |
 | `gamescope-asterism/` + `scripts/asterism-gamescope-*.sh` | [ASTERISM-GAMESCOPE.md](ASTERISM-GAMESCOPE.md) |
-| `docs/OWNERSHIP_BOUNDARY.md` | Spatial transform ownership investigation |
+| `scripts/asterism-dashboard-inspect` | [ASTERISM-DASHBOARD-INSPECT.md](ASTERISM-DASHBOARD-INSPECT.md) |
+| `docs/OWNERSHIP_BOUNDARY.md` | OpenVR Absolute ownership gate (blocked) |
+| `docs/DASHBOARD_MANAGER.md` | SteamVR Dashboard Manager spatial model |
 | `test/test_ownership_boundary.sh` | [_VERIFY_OWNERSHIP_BOUNDARY.md](_VERIFY_OWNERSHIP_BOUNDARY.md) |
-| `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) |
+| `test/test_dashboard_manager_docs.sh` | [_VERIFY_DASHBOARD_MANAGER_DOCS.md](_VERIFY_DASHBOARD_MANAGER_DOCS.md) |
+| `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |
 | `desktop/asterism-apply-outputs.sh` | [ASTERISM-APPLY-OUTPUTS.md](ASTERISM-APPLY-OUTPUTS.md) |

@@ -1,0 +1,10 @@
+[
+  "GetDockLocationTransformID",
+  "GetFrame",
+  "GetFrameWithTabId",
+  "GetFramesWithAssociatedSummonKeys",
+  "HasFramesWithAssociatedSummonKeys",
+  "frames",
+  "frames_local_undocked",
+  "isTheaterMode"
+]

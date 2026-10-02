@@ -3,12 +3,18 @@
 Binary: `pointer/helper/build/asterism-place`  
 Source: `pointer/helper/asterism-place.cpp`
 
+## Status
+
+**Legacy / experimental fallback.** Not part of the intended Dashboard Manager
+persistence architecture (OpenVR Absolute is blocked; see
+[../DASHBOARD_MANAGER.md](../DASHBOARD_MANAGER.md)). Kept for diagnostics; do
+not auto-invoke from layout apply.
+
 ## Purpose
 
-Place Asterism gamescope PerWindow overlays in world space. SteamVR denies
-`SetOverlayTransformAbsolute` on gamescope overlays from another OpenVR client
-(`PermissionDenied`); FrameTop solves this by laser-grabbing with a virtual
-controller. Asterism does the same with `asterism_pointer` + this helper.
+Place Asterism gamescope PerWindow overlays in world space via virtual-controller
+laser grab. SteamVR denies external `SetOverlayTransformAbsolute` on gamescope
+dashboard overlays.
 
 ## Commands
 

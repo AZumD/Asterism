@@ -1,0 +1,3 @@
+=== hit counts ===
+setInitialTransformForLocation: 1
+SGTransform: 1

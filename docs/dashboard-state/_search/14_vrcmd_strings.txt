@@ -1,0 +1,166 @@
+IVROverlay_029
+createNode transform -n "%s_locator_%d";
+Error with GetAllOverlays(...) : %d
+---- OVERLAYS ---- 
+     flags=0x%08X %s  overlayhandle=0x%016lx
+vr/game_theater
+Notification test overlay creation failed: %s
+systemui_dashboard
+dock_overlay_requested
+overlay_key
+dock_location
+Use vrcmd --dock-overlay "%s" "%s"
+toggle_theater_stereo
+Use vrcmd --toggle-theater-stereo
+For docking overlays to theater mode etc, use --dock-overlay <location> [overlay_key].
+For toggling stereo theater mode to theater mode etc, use --toggle-theater-stereo.
+		overlay so we can test scrolling behavior. It would be a real shame if something were to happen 
+Waiting for message overlay to be dismissed.
+--testmessageoverlay
+--testdisabledashboard
+--overlay
+--dock-overlay
+--toggle-theater-stereo
+--showdashboard
+--hidedashboard
+--overlays
+--gametheatersample
+--toggle-overlay-flag
+vrdashboard
+Waiting for 5 seconds for vrdashboard to startup.
+ShowDashboard( %s )
+HideDashboard
+Error finding overlay %s : %s
+Error getting overlay flag %s
+Error setting overlay flag %s
+Set Overlay flag %d to value %d
+world
+Invalid dock location "%s". Possible values are: 
+vrcmd_dock_overlay
+vrwebui_dashboard
+vrcmd_toggle_theater_stereo
+vrwebui_dashboardstore
+Dashboard pointer device: %u
+VREvent_OverlayMouseFocusChanged
+VREvent_ReloadOverlays
+VREvent_OverlayShown
+VREvent_OverlayHidden
+VREvent_DashboardActivated
+VREvent_DashboardDeactivated
+VREvent_ResetDashboard
+VREvent_OverlaySharedTextureChanged
+VREvent_DashboardOverlayCreated
+VREvent_StartDashboard
+VREvent_OverlayClosed
+VREvent_DashboardThumbChanged
+VREvent_OverlayCreated
+VREvent_OverlayDestroyed
+VREvent_SubmitScreenshotToDashboard
+VREvent_ScreenshotProgressToDashboard
+VREvent_PrimaryDashboardDeviceChanged
+VREvent_DashboardSectionSettingChanged
+VREvent_MessageOverlay_Closed
+VREvent_MessageOverlayCloseRequested
+VROverlayError_None
+VROverlayError_InvalidHandle
+VROverlayError_PermissionDenied
+VROverlayError_OverlayLimitExceeded
+VROverlayError_WrongVisibilityType
+VROverlayError_KeyTooLong
+VROverlayError_NameTooLong
+VROverlayError_KeyInUse
+VROverlayError_WrongTransformType
+VROverlayError_InvalidTrackedDevice
+VROverlayError_InvalidParameter
+VROverlayError_ThumbnailCantBeDestroyed
+VROverlayError_ArrayTooSmall
+VROverlayError_RequestFailed
+VROverlayError_InvalidTexture
+VROverlayError_UnableToLoadFile
+VROverlayError_KeyboardAlreadyInUse
+VROverlayError_NoNeighbor
+VROverlayError_TooManyMaskPrimitives
+VROverlayError_BadMaskPrimitive
+VROverlayError_TextureAlreadyLocked
+VROverlayError_TextureLockCapacityReached
+VROverlayError_TextureNotLocked
+VROverlayError_UnknownOverlay
+Unknown EVROverlayError (%d)
+VRNotificationError_InvalidOverlayHandle
+VRMsg_StartAutolaunchOverlays
+VRMsg_ShouldKillTheaterPancakeProcess
+VRMsg_ShouldKillTheaterPancakeProcessResponse
+VRMsg_CompositorSetDashboardVisibility
+VRMsg_CompositorSetDashboardVisibilityResponse
+VRApplication_Overlay
+VRApplication_OpenXROverlay
+Prop_StatusDisplayTransform_Matrix34
+Prop_CameraToHeadTransform_Matrix34
+Prop_CameraToHeadTransforms_Matrix34_Array
+Prop_ImuToHeadTransform_Matrix34
+Prop_DashboardScale_Float
+Prop_DashboardLinkSupport_Int32
+VROverlayFlags_SendVRTouchpadEvents
+VROverlayFlags_Reserved_4
+VROverlayFlags_SideBySide_Parallel
+VROverlayFlags_NoDashboardTab
+VROverlayFlags_ShowTouchPadScrollWheel
+VROverlayFlags_SendVRSmoothScrollEvents
+VROverlayFlags_StereoPanorama
+VROverlayFlags_SortWithNonSceneOverlays
+VROverlayFlags_Panorama
+VROverlayFlags_TransferOwnershipToInternalProcess
+VROverlayFlags_SideBySide_Crossed
+VROverlayFlags_VisibleInDashboard
+VROverlayFlags_SendVRDiscreteScrollEvents
+VROverlayFlags_WantsModalBehavior
+VROverlayFlags_IsPremultiplied
+VROverlayFlags_HideLaserIntersection
+VROverlayFlags_EnableControlBarKeyboard
+VROverlayFlags_ProtectedContent
+VROverlayFlags_IgnoreTextureAlpha
+VROverlayFlags_MakeOverlaysInteractiveIfVisible
+VROverlayFlags_MultiCursor
+VROverlayFlags_EnableControlBarClose
+VROverlayFlags_EnableControlBar
+VROverlayFlags_EnableClickStabilization
+VROverlayFlags_NoBackside
+VROverlayFlags_Reserved_30
+Unknown Overlay flag (%d)
+VROverlayType_Dashboard_Main
+VROverlayType_Dashboard_Thumbnail
+VROverlayType_Basic
+VROverlayType_Subview
+Unknown Overlay type (%d)
+IVROverlayInternal_XXX
+VRInitError_Init_VRDashboardNotFound
+VRInitError_Init_VRDashboardStartupFailed
+VRInitError_Init_VRDashboardServicePending
+VRInitError_Init_VRDashboardServiceTimeout
+VRInitError_Init_VRDashboardServiceStopped
+VRInitError_Init_VRDashboardAlreadyStarted
+VRInitError_Init_VRDashboardCopyFailed
+VRInitError_Init_VRDashboardTokenFailure
+VRInitError_Init_VRDashboardEnvironmentFailure
+VRInitError_Init_VRDashboardPathFailure
+VRInitError_Compositor_OverlayInitFailed
+VRInitError_Compositor_MessageOverlaySharedStateInitFailure
+VRInitError_Compositor_CreateOverlaySamplerState
+VRInitError_Compositor_CreateOverlayConstantBuffer
+VRInitError_Compositor_CreateOverlayIndexBuffer
+VRInitError_Compositor_CreateOverlayVertexBuffer
+VRInitError_Compositor_CreateMirrorOverlay
+VRInitError_Compositor_CreateOverlayInvalidCall
+VRInitError_Compositor_CreateOverlayAlreadyInitialized
+VR Dashboard Not Found (133)
+VR Dashboard startup failed (134)
+VR Dashboard startup failed, vrservice was pending for too long (160)
+VR Dashboard startup failed, attempt to communicate with vrservice timed out (161)
+VR Dashboard startup failed, vrservice was stopped (162)
+VR Dashboard startup failed, vrdashboard was already running (163)
+VR Dashboard startup failed, required files did not copy correctly (164)
+VR Dashboard startup failed, unable to create appropriate token (165)
+VR Dashboard startup failed, unable to create appropriate environment (166)
+VR Dashboard startup failed, path error (167)
+Compositor initialization succeeded, but overlay init failed (403)
+webinterface/dashboard/localization/webhelper_

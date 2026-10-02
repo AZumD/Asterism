@@ -1,0 +1,230 @@
+[
+  {
+    "pattern": "setInitialTransformForLocation",
+    "file": "chunk~8012d0c89.js",
+    "pos": 591810,
+    "ctx": "onHandle=(0,s.reaction)((()=>e.docking.dockLocation),((e,t)=>{this.m_flPushDistance=0,this.setState({sParentDevice:_t(e),xfTransform:void 0,dragSnapPreview:{location:e}},(()=>this.setInitialTransformForLocation(t)))})),this.setInitialTransformForLocation(void 0),this.m_PanelHeightReactionHandle=(0,s.reaction)((()=>{var t,r;return{flPanelTranslationForResizeOrigin:null!==(r=null===(t=null==e?void 0:e.docking.panelTranslationFor"
+  },
+  {
+    "pattern": "setInitialTransformForLocation",
+    "file": "chunk~8012d0c89.js",
+    "pos": 591854,
+    "ctx": "ocation),((e,t)=>{this.m_flPushDistance=0,this.setState({sParentDevice:_t(e),xfTransform:void 0,dragSnapPreview:{location:e}},(()=>this.setInitialTransformForLocation(t)))})),this.setInitialTransformForLocation(void 0),this.m_PanelHeightReactionHandle=(0,s.reaction)((()=>{var t,r;return{flPanelTranslationForResizeOrigin:null!==(r=null===(t=null==e?void 0:e.docking.panelTranslationForResizeOrigin)||void 0===t?void 0:t.y)&&void "
+  },
+  {
+    "pattern": "setInitialTransformForLocation",
+    "file": "chunk~8012d0c89.js",
+    "pos": 593426,
+    "ctx": "==(r=this.m_PanelHeightReactionHandle)||void 0===r||r.call(this),null===(n=this.m_StandingResetHandle)||void 0===n||n.call(this),window.clearTimeout(this.m_nDragSnapTimeoutHandle)}setInitialTransformForLocation(e){var t;const r=null===(t=this.props.frame)||void 0===t?void 0:t.docking.m_mapLastRelativeTransformForDockLocation.get(this.props.frame.docking.dockLocation);let n=r&&(this.props.frame.docking.dockLocation==i.yWq.LeftH"
+  },
+  {
+    "pattern": "setInitialTransformForLocation",
+    "file": "chunk~8012d0c89.js",
+    "pos": 594684,
+    "ctx": "t.rotation=e.rotation,t.translation={x:e.translation.x,y:e.translation.y,z:e.translation.z},this.setState({xfTransform:t})})).catch((e=>{console.warn(\"Failed to get SGTransform in setInitialTransformForLocation.\",e)}));break;case i.yWq.Theater:const e=bt(this.props.frame);e&&this.setState({xfTransform:e})}}requestDashboardSnapTransform(){return i.uS7.getInstance().requestSGTransform((0,i.nXw)(u.C6,M.JJ.GetDockLocationTransform"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 324549,
+    "ctx": "}this.m_setPanelSubscriptionsToAdd.clear(),this.m_setPanelSubscriptionsToRemove.clear(),this.m_bHasPendingSubscriptionUpdates=!1,this.m_bInitializedPanelSubscriptions=!0}))}requestSGTransform(e){return(0,n.sH)(this,arguments,void 0,(function*(e,t=0,r=0){if(!e||e.toLowerCase().includes(\"undefined\"))return Promise.reject(\"Invalid transform ID\");const n={type:\"transform_request\",id:e,flPushDistance:t,timeoutSec"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 324929,
+    "ctx": "d:e,flPushDistance:t,timeoutSec:r},i=yield this.m_mailbox.SendMessageAndWaitForResponse(a.pg,n,\"transform_response\");return i.id==e&&i.transform?i.transform:Promise.reject(\"requestSGTransform failed\")}))}requestSGTransformRelative(e,t){return(0,n.sH)(this,arguments,void 0,(function*(e,t,r=0){var n;if(!e||e.toLowerCase().includes(\"undefined\")||!t||t.toLowerCase().includes(\"undefined\"))return Promise.reject(\"I"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 324960,
+    "ctx": ":r},i=yield this.m_mailbox.SendMessageAndWaitForResponse(a.pg,n,\"transform_response\");return i.id==e&&i.transform?i.transform:Promise.reject(\"requestSGTransform failed\")}))}requestSGTransformRelative(e,t){return(0,n.sH)(this,arguments,void 0,(function*(e,t,r=0){var n;if(!e||e.toLowerCase().includes(\"undefined\")||!t||t.toLowerCase().includes(\"undefined\"))return Promise.reject(\"Invalid transform ID\");const i={"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 325437,
+    "ctx": ".m_mailbox.SendMessageAndWaitForResponse(a.pg,i,\"transform_response\");return s.from_id==e&&s.id==t&&s.transform?s.transform:Promise.reject(null!==(n=s.error)&&void 0!==n?n:\"requestSGTransform failed\")}))}}(0,n.Cg)([o.o],c.prototype,\"OnPanelHeightUpdate\",null)},6292:(e,t,r)=>{\"use strict\";function n(){return{translation:{x:0,y:0,z:0},rotation:{w:1,x:0,y:0,z:0},scale:{x:1,y:1,z:1}}}function i(e,t){return{x:e.x"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 594396,
+    "ctx": "i)();t.rotation=(0,i.FbK)({x:200,y:0,z:0}),t.translation=(0,i.q5z)(t.rotation,(0,i.WiO)({y:.2-e})),this.setState({xfTransform:t});break}case i.yWq.World:i.uS7.getInstance().requestSGTransform((0,i.nXw)(u.C6,M.JJ.GetDockLocationTransformID(i.yWq.Dashboard)),0).then((e=>{let t=(0,i.vxi)();t.rotation=e.rotation,t.translation={x:e.translation.x,y:e.translation.y,z:e.translation.z},this.setState({xfTransform:t})}"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 594669,
+    "ctx": " t=(0,i.vxi)();t.rotation=e.rotation,t.translation={x:e.translation.x,y:e.translation.y,z:e.translation.z},this.setState({xfTransform:t})})).catch((e=>{console.warn(\"Failed to get SGTransform in setInitialTransformForLocation.\",e)}));break;case i.yWq.Theater:const e=bt(this.props.frame);e&&this.setState({xfTransform:e})}}requestDashboardSnapTransform(){return i.uS7.getInstance().requestSGTransform((0,i.nXw)("
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 594878,
+    "ctx": "sformForLocation.\",e)}));break;case i.yWq.Theater:const e=bt(this.props.frame);e&&this.setState({xfTransform:e})}}requestDashboardSnapTransform(){return i.uS7.getInstance().requestSGTransform((0,i.nXw)(u.C6,M.JJ.GetDockLocationTransformID(i.yWq.Dashboard)),0).then((e=>{this.m_xfDashboardSnapTransform=e})).catch((e=>{}))}updatePushDistance(){return(0,n.sH)(this,void 0,void 0,(function*(){var e;if(this.state.d"
+  },
+  {
+    "pattern": "SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 595195,
+    "ctx": "{}))}updatePushDistance(){return(0,n.sH)(this,void 0,void 0,(function*(){var e;if(this.state.dragSnapPreview.location!=i.yWq.Dashboard)try{const t=yield i.uS7.getInstance().requestSGTransformRelative((0,i.nXw)(u.C6,this.m_sUnpushedOriginID),(0,i.nXw)(u.C6,this.m_sPushedOriginID),.25);Number.isFinite(null===(e=null==t?void 0:t.translation)||void 0===e?void 0:e.z)&&(this.m_flPushDistance=-t.translation.z)}catc"
+  },
+  {
+    "pattern": "Failed to get SGTransform",
+    "file": "chunk~8012d0c89.js",
+    "pos": 594655,
+    "ctx": ".then((e=>{let t=(0,i.vxi)();t.rotation=e.rotation,t.translation={x:e.translation.x,y:e.translation.y,z:e.translation.z},this.setState({xfTransform:t})})).catch((e=>{console.warn(\"Failed to get SGTransform in setInitialTransformForLocation.\",e)}));break;case i.yWq.Theater:const e=bt(this.props.frame);e&&this.setState({xfTransform:e})}}requestDashboardSnapTransform(){return i.uS7.getInstance().requestSGTransform((0,i.nXw)("
+  },
+  {
+    "pattern": "Invalid transform ID",
+    "file": "chunk~8012d0c89.js",
+    "pos": 324691,
+    "ctx": "alizedPanelSubscriptions=!0}))}requestSGTransform(e){return(0,n.sH)(this,arguments,void 0,(function*(e,t=0,r=0){if(!e||e.toLowerCase().includes(\"undefined\"))return Promise.reject(\"Invalid transform ID\");const n={type:\"transform_request\",id:e,flPushDistance:t,timeoutSec:r},i=yield this.m_mailbox.SendMessageAndWaitForResponse(a.pg,n,\"transform_response\");return i.id==e&&i.transform?i.transform:Promise.reject(\"requestSG"
+  },
+  {
+    "pattern": "Invalid transform ID",
+    "file": "chunk~8012d0c89.js",
+    "pos": 325159,
+    "ctx": "(e,t){return(0,n.sH)(this,arguments,void 0,(function*(e,t,r=0){var n;if(!e||e.toLowerCase().includes(\"undefined\")||!t||t.toLowerCase().includes(\"undefined\"))return Promise.reject(\"Invalid transform ID\");const i={type:\"transform_request\",from_id:e,id:t,timeoutSec:r},s=yield this.m_mailbox.SendMessageAndWaitForResponse(a.pg,i,\"transform_response\");return s.from_id==e&&s.id==t&&s.transform?s.transform:Promise.reject(nul"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 217615,
+    "ctx": "nUpdateComponentStates\",null),P=(0,n.Cg)([s.PA],P);var V,I,L=r(917),O=r(3606);const k=(0,s.PA)((()=>{const e=\"managevivetrackers\";if(!(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.ShouldShowTrackerUI()))return null;const t=l.HR.routePageSection==e;return i.createElement(i.Fragment,null,i.createElement(\"div\",{className:\"SettingsItem Button\"},i.createElement(c.$,{className:\"ButtonControl\",onClick:("
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 281751,
+    "ctx": "BoolProperty(\"/user/head\",o.fD8.DisplayAllowNightMode_Bool)?s.createElement(v.Al,{label:(0,p.we)(\"#Settings_NightModeCheck\"),title:(0,p.we)(\"#Settings_NightModeDesc\"),value:VRHTML.VRDashboardManager.GetNightModeEnabled(),onChange:e=>{null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SetNightModeEnabled(e),this.forceUpdate()}}):null}}const H=(0,a.PA)((()=>{if(!VRHTML)return null;let e=!0;if(VRHTML.VRProperti"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 281844,
+    "ctx": "we)(\"#Settings_NightModeCheck\"),title:(0,p.we)(\"#Settings_NightModeDesc\"),value:VRHTML.VRDashboardManager.GetNightModeEnabled(),onChange:e=>{null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SetNightModeEnabled(e),this.forceUpdate()}}):null}}const H=(0,a.PA)((()=>{if(!VRHTML)return null;let e=!0;if(VRHTML.VRProperties.GetBoolProperty(\"/user/head\",o.fD8.HasDriverDirectModeComponent_Bool)){const t=VRHTML.VRPr"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 458577,
+    "ctx": "=31),e}RequestClose(){var e,t;switch(this.closeMethod){case 0:null===(t=(e=this.componentProps).onCloseRequested)||void 0===t||t.call(e),this.m_bShowSpinner=!0;break;case 1:VRHTML.VRDashboardManager.SendOverlayClosed(this.componentProps.overlayKey);break;case 2:this.m_nExitButtonClicksSinceShowingSteamQuitDialog++,this.m_sSteamQuickDialogStatus=\"awaiting-response\",c.p.Steam.RequestAppQuit({app_id:this.componentProp"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 484014,
+    "ctx": "cking target:\",o.yWq[e])}SetInTheater(e=!0){this.frame.docking.SetDockLocation(o.yWq.Theater),e&&!(0,c.gp)(this.frame,s.SW.mainSteamFrame)&&(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboardForOverlay\",!1))}}function p(e){const{dockLocation:t,forFrameID:r}=e,n=i.useId();return i.useLayoutEffect((()=>l.JJ.RegisterFrameDockLocation(t,n,r).Unregister),[t,n,r]),i.createElement(o"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 492535,
+    "ctx": "ver\",this.frame.title,e)}SetInTheater(e=!0){this.frame.docking.SetDockLocation(a.yWq.Theater),e&&!(0,u.gp)(this.frame,s.SW.mainSteamFrame)&&(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboardForOverlay\",!1))}}(0,n.Cg)([i.observable],h.prototype,\"m_bJustFloatedFromDashboard\",void 0),(0,n.Cg)([i.computed],h.prototype,\"dockLocation\",null),(0,n.Cg)([i.computed],h.prototype,\"visua"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 533721,
+    "ctx": "=null===(e=this.context)||void 0===e?void 0:e.frame)||void 0===t||t.closing.RequestClose()}onReturnToGame(){D.c.roomViewShowing&&(0,D.s)(!1),null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"return_to_game\",!1)}onOpenAppControllerBindingSettings(){const e=v.G.Instance.SceneAppKey;f.r.OpenDeepLink(f.$.Name,e)}onOpenAppVideoSettings(){const e=v.G.Instance.SceneAppKey;y.xR.OpenDeepLink(y.a5.Name"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 586199,
+    "ctx": "live\"),!R&&null!==(t=_.HR.settings.get(\"/settings/dashboard/autoShowGameTheater\"))&&void 0!==t&&t&&(m.docking.SetInTheater(),null===(r=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager)||void 0===r||r.HideDashboard(\"GameFrame now alive, auto-theatering\",!1))}))),[m,R]);if(r.bVRSceneApp&&v.G.Instance.SceneAppIsVRLink)return null;const W=null!==(t=null==a?void 0:a.unFlags)&&void 0!==t?t:0;return r.bVRSc"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 620535,
+    "ctx": "KeyboardVisible&&d.SW.m_bKeyboardDockedInDashboard;if(Rt.Info(\"[ShowDashboardOverlay]\",JSON.stringify(e),\"bOpenDashboard\",t),null===(r=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager)||void 0===r?void 0:r.GetExternalDashboardDisabled())return;if(!_.HR.settings.get(u.Ij))return;(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRPathProperties.GetInt32PathProperty(u.Vz))==i.ZPA.SystemButtonDashboardHidde"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 624339,
+    "ctx": "t,!0),n&&(Rt.Info(\"[HideDashboard] SendRemoteDashboardClose\"),null===VRHTML||void 0===VRHTML||VRHTML.VRLink.SendRemoteDashboardClose()),r)if(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.CloseKeyboard(),d.SW.isFullyVisible&&!d.SW.isDashboardDiminished)if(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.HasMessageOverlay())this.switchToOverlayInternal(u.Qv,\"onHideDashboardRequested\");else{"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 624471,
+    "ctx": "()),r)if(null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.CloseKeyboard(),d.SW.isFullyVisible&&!d.SW.isDashboardDiminished)if(null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.HasMessageOverlay())this.switchToOverlayInternal(u.Qv,\"onHideDashboardRequested\");else{this.hideMessageOverlay(),Rt.Info(\"[HideDashboard] Hiding\"),this.m_activeOverlayThatVanished=void 0,d.SW.OnHidden(),ot.Z.showPopover"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "chunk~8012d0c89.js",
+    "pos": 663138,
+    "ctx": "ion o(e){const{icon:t,variant:r=\"steamui\"}=e;let s=null==t?void 0:t.enum;if(null==t?void 0:t.overlay)try{return n.createElement(l,{url:null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.GetOverlayImage(t.overlay+\".thumb\")})}catch(e){}if((null==t?void 0:t.hwnd)&&(c(\"VRGamepadUIIcon: Showing HWND icons isn't supported from VRWebUI. Only from Steam.\"),s=null!=s?s:18),(null==t?void 0:t.appid)&&c(\"VRGamepad"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "keyboard.js",
+    "pos": 20788,
+    "ctx": "(){var e;null===(e=this.m_KeyboardVisibilityCallbackHandle)||void 0===e||e.unregister()}onKeyboardInfoChanged(e){if(e.visible){const t=null===VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager.GetKeyboardBuffer();this.setState({bVisible:!0,bDockedInDashboard:e.dockedInDashboard,inputMode:e.inputMode,bMinimalMode:!!(u.QRg.Minimal&e.keyboardFlags),bMultilinePreview:e.lineMode==u.ba0.MultipleLines,text:t,textPos"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "keyboard.js",
+    "pos": 21234,
+    "ctx": "stions(t),this.getLayout(\"base\"),this.getLayout(this.language())}else this.setState({bVisible:!1})}startClose(){this.setState({bVisible:!1}),null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.CloseKeyboard()}genid(){return this.m_genid+=1,\"vk\"+this.m_genid}language(){var e;return this.m_language||(this.props.language?this.m_language=this.props.language:this.m_language=null!==(e=null===VRHTML||void 0===VRHTML"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "keyboard.js",
+    "pos": 24510,
+    "ctx": "s:t}),null===VRHTML||void 0===VRHTML||VRHTML.VRKeyboard.SetKeyboardText(e),this.updateSuggestions(this.getSuggestionBase(e,t))}handleDone(e){null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SendKeyboardDone(),this.startClose()}handleCancel(e){this.startClose()}handleClear(e){this.setState({text:\"\",textPos:0}),this.updateSuggestions(\"\")}isWhite(e){return\" \"==e}findWordLimits(e,t){if(t<e.length&&this.isWhite"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "keyboard.js",
+    "pos": 31203,
+    "ctx": ":VRHTML.GetSteamLanguage();null===VRHTML||void 0===VRHTML||VRHTML.VROverlay.SetInputMethod(VRHTML.VROverlay.ThisOverlayHandle(),u.RkM.Mouse),null===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.SetKeyboardOverlayToThis(),(0,h.uV)([\"systemui\"],v).then((()=>m.W.Init())).then((()=>g.s.Init())).then((()=>{(0,y.aj)().Init(\"SteamVR\",CLSTAMP,(0,y.d4)()),o.H(document.getElementById(\"root\")).render(i.createElement(_,{l"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "messageoverlay.js",
+    "pos": 13603,
+    "ctx": "ested(e){return e.unProcessID==this.state.unCallingProcessID?(console.log(\"Close requested from owning process \"+this.state.unCallingProcessID),null===s.Ay$||void 0===s.Ay$||s.Ay$.VRDashboardManager.OnMessageOverlayResponse(s.OxZ.ApplicationQuit),this.ResetState(),!0):(console.log(\"Error: Close requested from process \"+e.unProcessID+\", but owning process is \"+this.state.unCallingProcessID),!1)}OnRenderMessageOverla"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "messageoverlay.js",
+    "pos": 14423,
+    "ctx": "sn't present--exiting without sending response.\"),void this.ResetState();console.log(\"Button \"+e+\" clicked, sending OnMessageOverlayResponse.\"),null===s.Ay$||void 0===s.Ay$||s.Ay$.VRDashboardManager.OnMessageOverlayResponse(e),this.ResetState()}render(){return r.createElement(\"div\",{className:\"MessageOverlayContainer\"},r.createElement(c.W,{className:\"MessageOverlayPanel\"},r.createElement(\"div\",{className:\"MessageOv"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "systemui.js",
+    "pos": 145494,
+    "ctx": "alreadyHidDashboard)return;const t=null===s.Ay$||void 0===s.Ay$?void 0:s.Ay$.VRApplications.GetStartingApplicationKey();t&&t!=A.k_sHomeAppKey&&(null===s.Ay$||void 0===s.Ay$||s.Ay$.VRDashboardManager.HideDashboard(e,!1),this.setState({alreadyHidDashboard:!0}))}updateTransitionState(){if(!(null===s.Ay$||void 0===s.Ay$?void 0:s.Ay$.VRApplications))return;let e=s.Ay$.VRApplications.GetSceneApplicationState();e==s.HWH.S"
+  },
+  {
+    "pattern": "VRDashboardManager",
+    "file": "systemui.js",
+    "pos": 159827,
+    "ctx": "t}=e,[o,n]=r.useState(void 0);r.useEffect((()=>{if(o)return Se.Q.OnDesktopWindowFrameCreated(o),()=>Se.Q.OnDesktopWindowFrameDestroyed(o)}),[o]);const i=r.useCallback((()=>{VRHTML.VRDashboardManager.SendOverlayClosed(t.overlay_key)}),[]),a=se.Q.GetOverlayInfo(t.overlay_key);return a?1!=a.eOverlayType?null:32768&a.unFlags?r.createElement(ne.wI,{title:t.title,icon:{enum:18,hwnd:Number.parseInt(t.hwnd)},ref:n,componen"
+  },
+  {
+    "pattern": "DockOverlay",
+    "file": "chunk~8012d0c89.js",
+    "pos": 606951,
+    "ctx": "!0))),this.m_mailbox.RegisterHandler(\"switch_dashboard_overlay_requested\",(e=>this.showDashboardOverlay(Ct(e),!1))),this.m_mailbox.RegisterHandler(\"vrcmd_dock_overlay\",this.onVrCmdDockOverlayRequested),this.m_mailbox.RegisterHandler(\"hide_dashboard_requested\",(e=>this.hideDashboard(null==e?void 0:e.reason,null==e?void 0:e.source_is_vrlink_remote))),this.m_mailbox.RegisterHandler(\"toggle_dashboard_requested\","
+  },
+  {
+    "pattern": "DockOverlay",
+    "file": "chunk~8012d0c89.js",
+    "pos": 624965,
+    "ctx": "mes)e.docking&&e.docking.SetJustFloatedFromDashboard(!1)}else Rt.Info(\"[HideDashboard] already hidden. skipping\");else Rt.Info(\"[HideDashboard] Early exit, no local close\")}onVrCmdDockOverlayRequested(e){var t;const r=(()=>{switch(e.dock_location){case\"dashboard\":return i.yWq.Dashboard;case\"lefthand\":return i.yWq.LeftHand;case\"righthand\":return i.yWq.RightHand;case\"theater\":return i.yWq.Theater;case\"world\":r"
+  },
+  {
+    "pattern": "DockOverlay",
+    "file": "chunk~8012d0c89.js",
+    "pos": 639650,
+    "ctx": "boardOverlay\",null),(0,n.Cg)([s.action.bound],Bt.prototype,\"toggleDashboard\",null),(0,n.Cg)([s.action.bound],Bt.prototype,\"hideDashboard\",null),(0,n.Cg)([a.o],Bt.prototype,\"onVrCmdDockOverlayRequested\",null),(0,n.Cg)([a.o],Bt.prototype,\"onLegacyQuickLaunchButtonClick\",null),(0,n.Cg)([a.o],Bt.prototype,\"renderLegacyPowerMenu\",null),(0,n.Cg)([a.o],Bt.prototype,\"popoverMenuMouseLeave\",null),(0,n.Cg)([a.o],Bt.pr"
+  }
+]

@@ -1,0 +1,16 @@
+[
+  "SetBeingDragged",
+  "SetDockLocation",
+  "SetInTheater",
+  "SetJustFloatedFromDashboard",
+  "SetPreviewDockLocation",
+  "beingDragged",
+  "dockLocation",
+  "justFloatedFromDashboard",
+  "m_fLastTotalVisibleTimeInSeconds",
+  "m_mapLastRelativeTransformForDockLocation",
+  "mainPanelOrigin",
+  "panelTranslationForResizeOrigin",
+  "previewDockLocation",
+  "visualDockLocation"
+]

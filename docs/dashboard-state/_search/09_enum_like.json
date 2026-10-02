@@ -1,0 +1,802 @@
+[
+  {
+    "file": "chunk~1a88854fa.js",
+    "ctx": "=2087]=\"DisplayMaxAnalogGain_Float\",e[e.DashboardLinkSupport_Int32=2097]=\"DashboardLinkSu"
+  },
+  {
+    "file": "chunk~1a88854fa.js",
+    "ctx": "098]=\"DisplayMinUIAnalogGain_Float\",e[e.DashboardScale_Float=2091]=\"DashboardScale_Float\""
+  },
+  {
+    "file": "chunk~1a88854fa.js",
+    "ctx": "use=4]=\"LaserMouse\",e[e.SystemButtonHideDashboard=5]=\"SystemButtonHideDashboard\",e[e.Syst"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "\"systemui-root\",children:t,properties:{eDashboardRelatch:S,bContinuousRelatch:M,sceneColo"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ForceDashboardRelatch(){return this.m_ForceDashboardRe"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "latchCallbacks}ForceRelatchDashboard(e){this.m_ForceDashboardRelatchCallback"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "?void 0:e.docking.dockLocation)===a.yWq.Dashboard&&(!(!(null===(o=null===(t=this.activeFr"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "et activeFrameID(){return L.Mg.useRemoteDashboardState?L.Mg.unifiedDashboardState_Remote."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "eID)}_setActiveFrame(e,t){L.Mg.useRemoteDashboardState?console.log(\"_setActiveFrame calle"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "minishedStateFrameID=void 0,this.m_ForceDashboardRelatchCallbacks=new H.l,this.m_setSuppr"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "boardVisible=!1,this.m_bKeyboardDockedInDashboard=!1,this.m_sKeyboardOverlayKey=null,this"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "eDashboardFocus\",(({target_frame_id:e})=>this.Cycl"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "eDashboardFocus(e))),v.JJ.OnFrameDestroyed.Registe"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "kLocation==a.yWq.Theater){const e=this.m_rgTheaterFrameStack.fil"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "Iu.Alive&&e.docking.dockLocation==a.yWq.Dashboard));e.length>0?e[e.length-1].docking.SetI"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "e?void 0:e.docking.dockLocation)==a.yWq.Dashboard?null===(o=null===(t=this.activeFrame)||"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "sed));return e[(t+1)%e.length]}get cycleDashboardFocusLabel(){return(0,w.we)(\"#Cycle_View"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "_Focus\")}CycleDashboardFocus(e){const t=this.GetDashboardFocusC"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".cycleDashboardFocusLabel}))}get isDashboardBarOrChildPopupFocused(){var e,t,o,r;if("
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "sible=e.visible,this.m_bKeyboardDockedInDashboard=e.dockedInDashboard,this.m_sKeyboardOve"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "yboardVisible||!this.m_bKeyboardDockedInDashboard)return!1;if(0!=this.visibilityState_Ign"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": " null!=e&&e.docking.dockLocation!=a.yWq.Dashboard}get dashboardDistance(){if(this.m_dashb"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "Properties.GetFloatProperty(a.Gze,a.fD8.DashboardScale_Float))&&void 0!==t?t:1,o}get scen"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "rvable],R.prototype,\"m_bKeyboardDockedInDashboard\",void 0),(0,i.Cg)([l.observable],R.prot"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ed],R.prototype,\"cycleDashboardFocusLabel\",null),(0,i.Cg)([s.o],R.proto"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "type,\"CycleDashboardFocus\",null),(0,i.Cg)([l.computed],R.pro"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".docking.visualDockLocation){case l.yWq.Theater:return a.SW.defaultTheaterScale;case l."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".docking.visualDockLocation){case l.yWq.Theater:return a.SW.defaultTheaterScale;case l."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "rame.docking.visualDockLocation===l.yWq.Theater?1.75:0}get ignoreResizeAmount(){var e,t"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "frame.docking.visualDockLocation==l.yWq.Dashboard;case 2:return!1}}get mainPanelHeightOve"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "frame.docking.visualDockLocation==l.yWq.Theater?2:null!=this.componentProps.forcedUnifo"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "frame.docking.visualDockLocation!=l.yWq.Dashboard;case 2:return!0}}}(0,r.Cg)([i.computed]"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "h(this.docking.dockLocation){case a.yWq.Dashboard:return!(!l.SW.isFullyVisible&&!l.SW.isD"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ashboardDiminished)&&(!!this.isActiveDashboardFrame&&(null==p.JJ.frameIDPreviewingDash"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "boardDockSnap||p.JJ.frameIDPreviewingDashboardDockSnap==this.frameID));case a.yWq.Left"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "is.m_unActivePageID):void 0}get isActiveDashboardFrame(){return(0,k.gp)(l.SW.activeFrame,"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "this)}get isActiveDashboardFrameInDiminishedMode(){return this.isAc"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "tiveDashboardFrame&&l.SW.isDashboardDiminished}get pageIDs(){return Array.fr"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "uiresLaser(){var e;return!!this.isActiveDashboardFrameInDiminishedMode||!(null===(e=this."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "return this.docking.dockLocation==a.yWq.Theater||g.HR.settings.get(\"/settings/dashboard"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "r.Cg)([n.computed],W.prototype,\"isActiveDashboardFrame\",null),(0,r.Cg)([n.computed],W.pro"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "totype,\"isActiveDashboardFrameInDiminishedMode\",null),(0,r.Cg)([n"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "return g||v.docking.dockLocation!=a.yWq.World||(g=p.JJ.GetDockLocationTransformID(a.y"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "le_factor:v.docking.dockLocation==a.yWq.Theater?.5:0},s.createElement(b.t,{frame:v})),v"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".q3)((()=>t.docking.dockLocation==l.yWq.Dashboard)))return null;return n.createElement(g,"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "nParams:{display_name:(0,s.we)(\"#FloatInWorld\"),icon:{enum:26},invocation:1},onInvoke"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "d:()=>{t.docking.SetDockLocation(l.yWq.World)}})}function L(e){const{frame:t}=(0,i.N"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".q3)((()=>t.docking.dockLocation!=l.yWq.Theater&&t.docking.dockLocation!=l.yWq.Boot)))r"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".q3)((()=>o.docking.dockLocation==l.yWq.Dashboard||o.docking.dockLocation==l.yWq.LeftHand"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ightHand||o.docking.dockLocation==l.yWq.World)),d=(0,r.q3)((()=>o.docking.dockLocatio"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "display_name:\"left\"==t?(0,s.we)(\"#DockOnLeftController\"):(0,s.we)(\"#DockOnRightController\"),ic"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ".q3)((()=>t.docking.dockLocation!=l.yWq.Dashboard)))return null;return n.createElement(h,"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "d:()=>{t.docking.SetDockLocation(l.yWq.Dashboard)}}))}function V(e){const{frame:t}=(0,i."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ">{var e;return(null==t?void 0:t.isActiveDashboardFrame)&&(null===(e=null==t?void 0:t.acti"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "s.getFrameAtExclusiveDockLocation(p.yWq.Theater)}get isTheaterMode(){return null!=this."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ockLocation(e,t){var o;if(h.Mg.useRemoteDashboardState)return void g.Warning(\"_setDockLoc"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ckLocations.get(e))&&void 0!==o?o:p.yWq.Dashboard)!=t){if((0,v.$0)(t)){for(const[e,o]of t"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ckLocations.delete(e)}null==t||t==p.yWq.Dashboard?this.m_mapDockLocations.delete(e):this."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "m_mapDockLocations.set(e,t),t!=p.yWq.Theater&&a.SW.ClearTheaterHistoryForFrame(e)}}_"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "kLocation(e){var t,o,r;if(h.Mg.useRemoteDashboardState){const r=null!==(o=null===(t=h.Mg."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "==t?void 0:t.dock_location;return p.yWq.Dashboard}return null!==(r=this.m_mapDockLocation"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "s.get(e))&&void 0!==r?r:p.yWq.Dashboard}getFrameIDAtDockLocation(e){var t,o,r,n"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": ";if(h.Mg.useRemoteDashboardState){const i=null!==(o=null===(t=h.Mg."
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "eviewDockLocation(e,t){if(h.Mg.useRemoteDashboardState)g.Warning(\"_setPreviewDockLocation"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "Location(e){var t,o,r;if(!h.Mg.useRemoteDashboardState)return null!==(r=this.m_mapPreview"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "Wq.Boot&&e.docking.dockLocation!==p.yWq.Dashboard))]}GetFrame(e){var t;if(e)return null!="
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "ockLocationMapKey(e,t){return e===p.yWq.World?(g.Assert(null!=t),`${p.yWq[e]}:${null!"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "0}`):`${p.yWq[e]}`}get frameIDPreviewingDashboardDockSnap(){var e,t;if(h.Mg.useRemoteDash"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "(null==e?void 0:e.dock_location)==p.yWq.Dashboard)return null==e?void 0:e.frame_id}else f"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "s.m_mapPreviewDockLocations)if(t==p.yWq.Dashboard)return e}}(0,r.Cg)([n.observable],y.pro"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "computed],y.prototype,\"frameIDPreviewingDashboardDockSnap\",null),function(e){e[e.LegacyFl"
+  },
+  {
+    "file": "chunk~2e670652e.js",
+    "ctx": "amingToTV=64]=\"StreamingToTV\",e[e.ToggleDashboard=128]=\"ToggleDashboard\"}(r||(r={})),func"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "sName(){return\"CVRGamepadUI_Message_HideDashboardPopup_Request\"}}class f extends n.Messag"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "sName(){return\"CVRGamepadUI_Message_HideDashboardPopup_Response\"}}class R extends n.Messa"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "Name(){return\"CVRGamepadUI_Message_CycleDashboardFocus_Request\"}}class G extends n.Messag"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "Name(){return\"CVRGamepadUI_Message_CycleDashboardFocus_Response\"}}class U extends n.Messa"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "t:p,msgClassResponse_t:S,strMethod:\"ShowDashboardPopup\"},\"HideDashboardPopup#1\":{msgClass"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "t:y,msgClassResponse_t:f,strMethod:\"HideDashboardPopup\"},\"RemoteVideoStream#1\":{msgClassR"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "onse_t:N,strMethod:\"FocusDashboardBar\"},\"CycleDashboardFocus#1\":{msgClassR"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ":x,msgClassResponse_t:G,strMethod:\"CycleDashboardFocus\"},\"GamepadButtonAction#1\":{msgClas"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "me:m.Ij,title:(0,p.we)(\"#Settings_EnableDashboardDesc\"),label:(0,p.we)(\"#Settings_EnableD"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "Properties.GetFloatProperty(i.Gze,i.fD8.DashboardScale_Float))&&void 0!==t?t:1),[s,o]=(e="
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ocation\"]=this.props.dockLocation||s.yW.Dashboard,[e,r]}}(0,n.Cg)([i.o],o.prototype,\"buil"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ystem.dashboard.nowplaying\",b=\"XRServiceDashboard\",S=.25,y=2,f=.03,R=\"current.scene.app.b"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "rdGrabHandleTransform\",G=\"DashboardOverlayDashboardBarOrigin\",U=\"DashboardG"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "leHomeApp\",j=\"/settings/dashboard/enableDashboard\",K=\"/settings/steamvr/disableChaperone\""
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "_dashboard_action_invoked\",this.OnRemoteDashboardActionInvoked)})),s.p.SteamVR.SetImpleme"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ",(e=>{(0,p.s)(null!=e&&e)}))}))}OnRemoteDashboardActionInvoked(e){var t;if(v.Mg.m_bIsVRLi"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ry(e.data);w.Debug(\"OnRemoteDashboardActionInvoked\",w.IsDebugEnabled()&&r.toO"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eDashboardActionInvoked, but not a unified dashboa"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": " 0),(0,n.Cg)([R.o],C.prototype,\"OnRemoteDashboardActionInvoked\",null),(0,n.Cg)([i.action]"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e=this.desktopFrames.find((e=>e.isActiveDashboardFrame)))&&void 0!==e?e:this.desktopWindo"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "wFrames.find((e=>e.isActiveDashboardFrame));t&&(0,o.runInAction)((()=>this.m"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "((0,a.reaction)((()=>this.frame.isActiveDashboardFrame),(()=>this.m_bEverSelectedAsActive"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "!0),{delay:200}))}get overlayWantsToHideDashboardTab(){var e;return null!==(e=u.Q.GetOver"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ase\"auto\":return!this.overlayWantsToHideDashboardTab&&(!this.initiallyOnlyInHamburgerMenu"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e\"always\":return!this.overlayWantsToHideDashboardTab&&this.initiallyOnlyInHamburgerMenu}}"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "omputed],d.prototype,\"overlayWantsToHideDashboardTab\",null),(0,n.Cg)([a.computed],d.proto"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ity(38,o.fkw.MutualLocal)){if(c.SW.cycleDashboardFocusLabel)return c.SW.CycleDashboardFoc"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "tiveAndVisiblePage)&&this.frame.isActiveDashboardFrame&&c.SW.canBeInDiminishedModeForActi"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "veFrame&&c.SW.isFullyVisible}get canHideDashboard(){var e,t;return s.u.gamepadFocusAllowe"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "&this.frame.docking.dockLocation!=o.yWq.Dashboard&&!(null===(t=this.framePage)||void 0==="
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "his.canEnterDiminishedMode||this.canHideDashboard)&&!this.framePage.shouldShowMinimalDeco"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "c.SW.EnterDiminishedState():this.canHideDashboard&&(this.PushInputFocus(),d.cQ.Instance.h"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ideDashboard(\"Gamepad Mode Button\"))}HandleLaserMous"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ",n.Cg)([i.computed],v.prototype,\"canHideDashboard\",null),(0,n.Cg)([i.computed],v.prototyp"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "l?void 0:l.docking.dockLocation)==i.yWq.Dashboard&&(r=null===(e=o.JJ.frames)||void 0===e?"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e?void 0:e.docking.dockLocation)==i.yWq.Dashboard)).map((e=>e))),null===(t=r.map((e=>null"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".docking.visualDockLocation){case c.yWq.Dashboard:return!0;case c.yWq.Theater:return l.SW"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "kLocation(e){var t,r,n;if(d.Mg.useRemoteDashboardState){if(e==this.previewDockLocation)re"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "=e?void 0:e.frameID)}get justFloatedFromDashboard(){return this.m_bJustFloatedFromDashboa"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "rd}SetJustFloatedFromDashboard(e){this.m_bJustFloatedFromDashboard=e}g"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eTimeInSeconds=0,this.m_bJustFloatedFromDashboard=!1,this.m_bBeingDragged=!1,(0,a.makeObs"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "iveDashboardFrame&&this.frame.inputFocus.anyPanelHas"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e),this.frame.docking.SetJustFloatedFromDashboard(e==o.yWq.World)):this.Log.Error(\"Can't "
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "troller docking target:\",o.yWq[e])}SetInTheater(e=!0){this.frame.docking.SetDockLocatio"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ull===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboard"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ervable],m.prototype,\"m_bJustFloatedFromDashboard\",void 0),(0,n.Cg)([a.computed],m.protot"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ype,\"justFloatedFromDashboard\",null),(0,n.Cg)([a.action],m.prototype,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "\"SetJustFloatedFromDashboard\",null),(0,n.Cg)([a.computed],m.prototyp"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "le_factor:r.docking.dockLocation==l.yWq.Theater?.5:0},i.createElement(l.Zkm,{debug_name"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "h{constructor(e){this.m_bJustFloatedFromDashboard=!1,this.frame=e,(0,i.makeObservable)(th"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "kLocation(e){var t,r,n;if(c.Mg.useRemoteDashboardState){if(e==this.previewDockLocation)re"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "=e?void 0:e.frameID)}get justFloatedFromDashboard(){return this.m_bJustFloatedFromDashboa"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "rd}SetJustFloatedFromDashboard(e){this.m_bJustFloatedFromDashboard=e}S"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eVRLinkServer\",this.frame.title,e)}SetInTheater(e=!0){this.frame.docking.SetDockLocatio"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ull===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"AutoHideDashboard"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ervable],h.prototype,\"m_bJustFloatedFromDashboard\",void 0),(0,n.Cg)([i.computed],h.protot"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "i.computed],h.prototype,\"justFloatedFromDashboard\",null),(0,n.Cg)([i.action],h.prototype,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "\"SetJustFloatedFromDashboard\",null),(0,n.Cg)([i.action],h.prototype,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eturn!0}get asLocalFrame(){}get isActiveDashboardFrame(){return(0,u.gp)(s.SW.activeFrame,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "n.Cg)([i.computed],g.prototype,\"isActiveDashboardFrame\",null),(0,n.Cg)([i.computed],g.pro"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "7==e)return void(t&&g.cQ.Instance.toggleDashboard(\"Gamepad Guide Button\"));if(_.H.inRoomS"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "})),s.p.SteamVR.SetImplementation(\"HideDashboardPopup\",(e=>{this.onHideDashboardPopup(e)"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "y:void 0,special_identifier:2}):e}onHideDashboardPopup(e){u(this.GetRequestForID(null==e?"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".prototype,\"onHideDashboardPopup\",null),(0,n.Cg)([i.o],c.prototype,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ull===VRHTML||void 0===VRHTML||VRHTML.VRDashboardManager.HideDashboard(\"return_to_game\",!"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "yboardVisible&&!d.SW.m_bKeyboardDockedInDashboard&&o.createElement(i.$lc,null,o.createEle"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eyboardVisible&&d.SW.m_bKeyboardDockedInDashboard&&o.createElement(J,{debugHostLocation:\""
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".frameID,label:e.title,active:e.isActiveDashboardFrame,onClick:()=>this.props.onFrameButt"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".frameID,label:e.title,active:e.isActiveDashboardFrame,onClick:()=>this.props.onFrameButt"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "m?void 0:m.docking.dockLocation)==i.yWq.Dashboard;null===(e=Bt.Instance)||void 0===e||e.s"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "m?void 0:m.docking.dockLocation)==i.yWq.Dashboard;null===(r=Bt.Instance)||void 0===r||r.s"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "VRHTML||void 0===VRHTML?void 0:VRHTML.VRDashboardManager)||void 0===r||r.HideDashboard(\"G"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "Tracking)){const n=-.4;let a=VRHTML.CalcDashboardTransform(r.xfDeviceToAbsoluteTracking,!"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "_nDragSnapTimeoutHandle=void 0,this.m_xfDashboardSnapTransform=void 0,this.m_PanelHeightR"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "rame.docking.dockLocation},dragCanSnapToDashboard:!1,bIsResizing:!1,nGrabScaleResetGenera"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "reaction)((()=>e.docking.justFloatedFromDashboard&&!e.isActiveDashboardFrame),(()=>{if(nu"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "tion,t)})}),e.docking.SetJustFloatedFromDashboard(!1)})),this.m_DockLocationReactionHandl"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "id 0===r?void 0:r.dockLocation)===i.yWq.Theater){const e=bt(this.props.frame);e&&this.s"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "xfTransform:e})}}),100)}),{name:\"Recalc Theater position on standing reset\"})}component"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "props.frame.docking.dockLocation!=i.yWq.World||e!=i.yWq.LeftHand&&e!=i.yWq.RightHand|"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".frame.docking.dockLocation){case i.yWq.Dashboard:{let e=(0,i.vxi)();e.rotation=(0,i.FbK)"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "State({xfTransform:t});break}case i.yWq.World:i.uS7.getInstance().requestSGTransform("
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "6,M.JJ.GetDockLocationTransformID(i.yWq.Dashboard)),0).then((e=>{let t=(0,i.vxi)();t.rota"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ormForLocation.\",e)}));break;case i.yWq.Theater:const e=bt(this.props.frame);e&&this.se"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "tState({xfTransform:e})}}requestDashboardSnapTransform(){return i.uS7.getInstance"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "6,M.JJ.GetDockLocationTransformID(i.yWq.Dashboard)),0).then((e=>{this.m_xfDashboardSnapTr"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "s.state.dragSnapPreview.location!=i.yWq.Dashboard)try{const t=yield i.uS7.getInstance().r"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "([this.updatePushDistance(),this.requestDashboardSnapTransform()]).then((()=>{this.m_bRef"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e(u.Ww,i.muq.Standing),o=[];if(this.m_xfDashboardSnapTransform&&d.SW.isFullyVisible&&o.pu"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "sh({xf:this.m_xfDashboardSnapTransform,location:i.yWq.Dashboard})"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "nce))[0])&&void 0!==t?t:{location:i.yWq.World};p.location!=i.yWq.Dashboard||this.stat"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "e.dragCanSnapToDashboard||(p={location:i.yWq.World});const h=c.f"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ind((e=>e.location==i.yWq.Dashboard)),g=h&&h.fDistance>m[i.yWq.Dashboard],v"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "anSnapToDashboard:v}),this.state.dragSnapPreview.location"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "h,i.muq.Standing);let a;switch(this.m_xfDashboardSnapTransform=void 0,this.m_bRefreshingC"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "te.dragSnapPreview.location;if(this.m_xfDashboardSnapTransform=void 0,e.docking.beingDrag"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ",e.docking&&e.docking.SetJustFloatedFromDashboard(!1)}renderTheaterFrame(){var e,t,r,n,a,"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "props.frame.docking.dockLocation==i.yWq.Theater},o.createElement(i.dLy,{translation:{y:"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "createElement(ge.in,{dockLocation:i.yWq.Theater}),o.createElement(i.dLy,{parent_id:c.fr"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "s.state.dragSnapPreview.location==i.yWq.Dashboard&&(s=void 0,l=void 0,n=M.JJ.GetDockLocat"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ionTransformID(i.yWq.Dashboard),u=!1),null!=(null==s?void 0:s.translat"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "props.frame.docking.dockLocation==i.yWq.Theater?this.renderTheaterFrame():this.renderFl"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ll==e?void 0:e.source_is_vrlink_remote,eDashboardRelatch:null==e?void 0:e.dashboard_relat"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "\"hide_dashboard_requested\",(e=>this.hideDashboard(null==e?void 0:e.reason,null==e?void 0:"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "gle_dashboard_requested\",(e=>this.toggleDashboard(null==e?void 0:e.reason,null==e?void 0:"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "teamFrame)||void 0===z?void 0:z.isActiveDashboardFrame)||(null===(x=null===(N=d.SW.mainSt"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ToPage(e)}t.docking.dockLocation==i.yWq.Dashboard?null===VRHTML||void 0===VRHTML||VRHTML."
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ",M.gp)(t,d.SW.mainSteamFrame)||this.hideDashboard(`ShowGame/${i.yWq[t.docking.dockLocatio"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ")e.docking&&e.docking.SetJustFloatedFromDashboard(!1)}onDashboardOverlayDestroyed(e){var "
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".m_bVRLinkStreamingActive&&je.Mg.unifiedDashboardEnabled&&(je.Mg.useRemoteDashboardState|"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "eyboardVisible&&d.SW.m_bKeyboardDockedInDashboard;if(Rt.Info(\"[ShowDashboardOverlay]\",JSO"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "l?void 0:l.docking.dockLocation)!=i.yWq.Theater||o){if(t){let t=!1,r=!1,n=!1;if(je.Mg.m"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "=!0:(t=!0,n=!0)):t=!0,r&&(Rt.Info(\"[ShowDashboardOverlay]\",\"SendRemoteDashboardOpen\"),nul"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "VRHTML.VRLink)||void 0===a||a.SendRemoteDashboardOpen()),!t)return void Rt.Info(\"[ShowDas"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "W.OnShown(),(0,i.EmM)(null==e?void 0:e.eDashboardRelatch)}(null==l?void 0:l.docking.dockL"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "is.autoSwitchOverlayIfNeeded())}}}toggleDashboard(e,t){Rt.Info(\"[ToggleDashboard]\",e,\"bSo"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ble||(r=!0)}if(r)return Rt.Info(\"[ToggleDashboard]\",\"SendRemoteDashboardToggle\"),void(nul"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "oid 0===VRHTML||VRHTML.VRLink.SendRemoteDashboardToggle());VRHTML.VROverlay.HideKeyboard("
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "ame_Hack||(d.SW.isFullyVisible?this.hideDashboard(e,t):this.showDashboardOverlay({sReason"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ":e,bSourceIsVRLinkRemote:t,eDashboardRelatch:d.SW.isDashboardDiminished?i.hqo"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".LargeDeadZone:i.ke3},!0))}hideDashboard(e,t){if(Rt.Info(\"[HideDashboard]\",e,\"bS"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "i.ZPA.SystemButtonHideDashboard&&ft.sp.guidedTourState!=i.ZPA.Invalid&&"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ".guidedTourState==i.ZPA.SystemButtonHideDashboard&&(null===VRHTML||void 0===VRHTML||VRHTM"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "m_bIsVRLinkClient,!0),n&&(Rt.Info(\"[HideDashboard] SendRemoteDashboardClose\"),null===VRHT"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "oid 0===VRHTML||VRHTML.VRLink.SendRemoteDashboardClose()),r)if(null===VRHTML||void 0===VR"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "oOverlayInternal(u.Qv,\"onHideDashboardRequested\");else{this.hideMessageOverlay"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": "(),Rt.Info(\"[HideDashboard] Hiding\"),this.m_activeOverlayThatVanis"
+  },
+  {
+    "file": "chunk~8012d0c89.js",
+    "ctx": ")e.docking&&e.docking.SetJustFloatedFromDashboard(!1)}else Rt.Info(\"[HideDashboard] alrea"
+  }
+]

@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""Read-only Asterism ↔ SteamVR Dashboard Manager diagnostic.
+
+Reports what Asterism can observe *without* patching systemui.
+
+Live Dashboard Manager fields (dockLocation, xfTransform, frameID, transform IDs)
+live inside the SteamVR systemui JS process and are null here until a bridge exists.
+
+See docs/DASHBOARD_MANAGER.md.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "layout"))
+sys.path.insert(0, str(ROOT / "display"))
+
+from displays import load as load_displays  # noqa: E402
+from layout import load as load_layout, screen_keys  # noqa: E402
+
+
+BRIDGE_STATUS = {
+    "live_dashboard_manager": "unavailable_without_systemui_bridge",
+    "presentation_mutation": "vrcmd --dock-overlay → mailbox vrcmd_dock_overlay → frame.docking.SetDockLocation",
+    "world_pose_storage": "frame.docking.m_mapLastRelativeTransformForDockLocation + UndockedOverlay.state.xfTransform",
+    "docs": "docs/DASHBOARD_MANAGER.md",
+}
+
+
+def _vrcmd_env() -> dict[str, str]:
+    env = os.environ.copy()
+    steamvr = env.get("STEAMVR_ROOT", "/opt/steamvr")
+    env["LD_LIBRARY_PATH"] = f"{steamvr}/bin/linuxarm64" + (
+        f":{env['LD_LIBRARY_PATH']}" if env.get("LD_LIBRARY_PATH") else ""
+    )
+    return env
+
+
+def vrcmd_overlays() -> list[dict[str, Any]]:
+    vrcmd = Path(os.environ.get("VRCMD", "/opt/steamvr/bin/linuxarm64/vrcmd"))
+    if not vrcmd.is_file():
+        return []
+    r = subprocess.run(
+        [str(vrcmd), "--overlays"],
+        capture_output=True,
+        text=True,
+        env=_vrcmd_env(),
+        timeout=15,
+        check=False,
+    )
+    rows = []
+    for line in (r.stdout or "").splitlines():
+        # 'asterism.desktop.app.2' -- 'Desktop', 0x0 visible VROverlayType_Dashboard_Main
+        m = re.search(
+            r"'([^']+)'\s*--\s*'([^']*)'.*?(\bvisible\b|\bnot_visible\b).*?(VROverlayType_\w+)?",
+            line,
+        )
+        if not m:
+            continue
+        key = m.group(1)
+        if not key.startswith("asterism.desktop"):
+            continue
+        if ".thumb" in key or ".layer" in key:
+            continue
+        rows.append(
+            {
+                "overlay_key": key,
+                "name": m.group(2),
+                "visible": m.group(3) == "visible",
+                "openvr_type": m.group(4),
+                "raw": line.strip(),
+            }
+        )
+    return rows
+
+
+def display_overlay_mapping() -> list[dict[str, Any]]:
+    """Stable Asterism display-N → current Gamescope PerWindow overlay key.
+
+    Mapping is positional: enabled displays.json order ↔ screen_keys() order
+    (same convention layout.apply already uses). Runtime keys like
+    asterism.desktop.app.2 are NOT stable identities.
+    """
+    cfg = load_displays()
+    displays = [d for d in cfg.get("displays", []) if d.get("enabled", True)]
+    keys = screen_keys()
+    layout = load_layout()
+    overlays = {o["overlay_key"]: o for o in vrcmd_overlays()}
+    out = []
+    for i, d in enumerate(displays):
+        did = d.get("id") or f"display-{i+1}"
+        key = keys[i] if i < len(keys) else None
+        configured = (
+            layout["screens"][i].get("dock", "world")
+            if i < len(layout.get("screens", []))
+            else None
+        )
+        live = overlays.get(key or "", {})
+        out.append(
+            {
+                "display_id": did,
+                "overlay_key": key,
+                "configured_presentation": configured,
+                # Live Dashboard Manager fields — null until systemui bridge
+                "presentation": None,
+                "dashboard_frame_id": None,
+                "transform_id": None,
+                "scene_node": None,
+                "position": None,
+                "rotation": None,
+                "scale": None,
+                "curvature": None,
+                "visible": live.get("visible"),
+                "openvr_overlay_type": live.get("openvr_type"),
+                "openvr_note": "Always DashboardTab for Gamescope CreateDashboardOverlay panels; not presentation.",
+                "bridge": BRIDGE_STATUS,
+            }
+        )
+    return out
+
+
+def architecture_summary() -> dict[str, Any]:
+    return {
+        "presentation_enum": {
+            "name": "yWq (minified)",
+            "values": [
+                "Dashboard",
+                "World",
+                "Theater",
+                "LeftHand",
+                "RightHand",
+                "Boot",
+            ],
+            "ui_actions": {
+                "FloatInWorld": "frame.docking.SetDockLocation(World)",
+                "ReturnToDashboard": "frame.docking.SetDockLocation(Dashboard)",
+                "ViewInTheater": "frame.docking.SetInTheater()",
+                "DockOnLeftController": "frame.docking.SetDockLocation(LeftHand)",
+                "DockOnRightController": "frame.docking.SetDockLocation(RightHand)",
+            },
+        },
+        "identity": {
+            "stable_asterism": "display_id (displays.json)",
+            "runtime_overlay_key": "asterism.desktop.app.N (Gamescope PerWindow; not stable)",
+            "dashboard_frame": "frame.frameID + associatedSummonOverlayKeys / activePage.summonOverlayKey",
+            "scene_graph": "SGID via VRHTML.NextSGID / RegisterFrameDockLocation / GetDockLocationTransformID",
+        },
+        "world_pose": {
+            "live": "UndockedOverlay React state.xfTransform {translation, rotation}",
+            "remembered_per_location": "frame.docking.m_mapLastRelativeTransformForDockLocation",
+            "written_on": "endFloatingWindowMoveInternal when location in {World, LeftHand, RightHand}",
+        },
+        "mutation_paths": {
+            "presentation": "UI / vrcmd --dock-overlay → mailbox vrcmd_dock_overlay → onVrCmdDockOverlayRequested → SetDockLocation → JJ._setDockLocation(frameID, location)",
+            "pose": "grab/drag updates xfTransform; release writes map + SetDockLocation",
+        },
+        "files": [
+            "/opt/steamvr/resources/webinterface/dashboard/chunk~8012d0c89.js",
+            "/opt/steamvr/resources/webinterface/dashboard/systemui.js",
+            "/opt/steamvr/resources/webinterface/dashboard/localization/dashboard_english.json",
+        ],
+    }
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="asterism-dashboard-inspect")
+    p.add_argument(
+        "--architecture",
+        action="store_true",
+        help="print traced Dashboard Manager architecture JSON",
+    )
+    args = p.parse_args()
+    if args.architecture:
+        print(json.dumps(architecture_summary(), indent=2))
+        return 0
+    print(json.dumps(display_overlay_mapping(), indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

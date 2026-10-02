@@ -1,0 +1,40 @@
+=== dashboard dir listing ===
+total 1916
+drwxr-xr-x 1 root root   1124 Oct  1 08:57 .
+drwxr-xr-x 1 root root     76 Oct  1 08:57 ..
+-rwxr-xr-x 1 root root   2473 Oct  1 04:53 bindingcallouts.html
+-rwxr-xr-x 1 root root  27618 Oct  1 04:53 bindingcallouts.js
+-rwxr-xr-x 1 root root  35166 Oct  1 04:53 chunk~1a88854fa.js
+-rwxr-xr-x 1 root root 210197 Oct  1 04:53 chunk~2e670652e.js
+-rwxr-xr-x 1 root root  21132 Oct  1 04:53 chunk~336cd93ad.js
+-rwxr-xr-x 1 root root  28359 Oct  1 04:53 chunk~56fe39318.js
+-rwxr-xr-x 1 root root  10144 Oct  1 04:53 chunk~5c2db6fe6.js
+-rwxr-xr-x 1 root root  10172 Oct  1 04:53 chunk~7f75cbff5.js
+-rwxr-xr-x 1 root root 681351 Oct  1 04:53 chunk~8012d0c89.js
+-rwxr-xr-x 1 root root  86742 Oct  1 04:53 chunk~bd288592d.js
+-rwxr-xr-x 1 root root  37079 Oct  1 04:53 chunk~edeac9135.js
+-rwxr-xr-x 1 root root  22093 Oct  1 04:53 chunk~f620ae578.js
+-rwxr-xr-x 1 root root   2396 Oct  1 04:53 controllerbinding.html
+-rwxr-xr-x 1 root root 309254 Oct  1 04:53 controllerbindingui.js
+drwxr-xr-x 1 root root    368 Oct  1 08:57 css
+-rwxr-xr-x 1 root root   2469 Oct  1 04:53 debugcommands.html
+-rwxr-xr-x 1 root root  13968 Oct  1 04:53 debugcommands.js
+drwxr-xr-x 1 root root    856 Oct  1 08:57 images
+-rwxr-xr-x 1 root root   2539 Oct  1 04:53 keyboard.html
+-rwxr-xr-x 1 root root  33112 Oct  1 04:53 keyboard.js
+drwxr-xr-x 1 root root   1030 Oct  1 08:57 keyboards
+drwxr-xr-x 1 root root    484 Oct  1 08:57 libraries
+drwxr-xr-x 1 root root   4960 Oct  1 08:57 localization
+-rwxr-xr-x 1 root root   2471 Oct  1 04:53 messageoverlay.html
+-rwxr-xr-x 1 root root  17834 Oct  1 04:53 messageoverlay.js
+-rwxr-xr-x 1 root root   2655 Oct  1 04:53 notificationtoast.html
+-rwxr-xr-x 1 root root  11064 Oct  1 04:53 notificationtoast.js
+-rwxr-xr-x 1 root root   2652 Oct  1 04:53 settings_desktop.html
+-rwxr-xr-x 1 root root  10212 Oct  1 04:53 settings_desktop.js
+drwxr-xr-x 1 root root   1680 Oct  1 08:57 sounds
+drwxr-xr-x 1 root root    758 Oct  1 08:57 suggestions
+-rwxr-xr-x 1 root root   1845 Oct  1 04:53 systemreportviewer.html
+-rwxr-xr-x 1 root root  17308 Oct  1 04:53 systemreportviewer.js
+-rwxr-xr-x 1 root root   2537 Oct  1 04:53 systemui.html
+-rwxr-xr-x 1 root root 298574 Oct  1 04:53 systemui.js
+94M	.
