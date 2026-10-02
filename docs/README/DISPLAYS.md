@@ -4,7 +4,7 @@ Module: `display/displays.py`
 
 ## Purpose
 
-Persistent Linux display topology schema and validation (no spatial VR fields).
+Persistent Linux display topology schema and validation. Multi-display requires identical resolution on every enabled output (gamescope PerWindow). Spatial dock modes live in [LAYOUT.md](LAYOUT.md).
 
 ## Schema
 

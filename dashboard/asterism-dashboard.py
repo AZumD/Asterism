@@ -154,23 +154,64 @@ def _can_restart() -> bool:
 def ensure_desktop(*, reason: str = "ensure") -> str:
     """Start desktop if missing. Used at session start and crash recovery — not by show()."""
     if not steamvr_alive():
-        return "error: SteamVR not running; refusing desktop start"
-    if desktop_running():
-        return "desktop already running"
-    if reason == "crash-recovery" and not _can_restart():
-        log("ERROR: desktop crash restart rate limit exceeded; not restarting")
-        return "error: desktop restart rate-limited"
-    log(f"starting asterism-desktop.service ({reason})")
-    if reason == "crash-recovery":
-        _restart_times.append(time.time())
-    r = systemctl_user("start", "asterism-desktop.service")
-    if r.returncode != 0:
-        return f"error: start desktop failed: {r.stderr.strip() or r.stdout.strip()}"
-    for _ in range(40):
-        if overlay_listed() or gamescope_running():
+        msg = "error: SteamVR not running; refusing desktop start"
+        log(msg)
+        return msg
+    unit_active = systemctl_user("is-active", "asterism-desktop.service").stdout.strip() == "active"
+    gs = gamescope_running()
+    if unit_active and gs:
+        msg = f"desktop already running ({reason})"
+        log(msg)
+        return msg
+    if unit_active and not gs:
+        log(f"desktop unit active without gamescope ({reason}); restarting")
+        systemctl_user("reset-failed", "asterism-desktop.service")
+        systemctl_user("restart", "asterism-desktop.service")
+    else:
+        if reason == "crash-recovery" and not _can_restart():
+            log("ERROR: desktop crash restart rate limit exceeded; not restarting")
+            return "error: desktop restart rate-limited"
+        log(f"starting asterism-desktop.service ({reason})")
+        if reason == "crash-recovery":
+            _restart_times.append(time.time())
+        systemctl_user("reset-failed", "asterism-desktop.service")
+        r = systemctl_user("start", "asterism-desktop.service")
+        if r.returncode != 0:
+            msg = f"error: start desktop failed: {r.stderr.strip() or r.stdout.strip()}"
+            log(msg)
+            return msg
+    for _ in range(80):
+        if gamescope_running() or overlay_listed():
             break
         time.sleep(0.25)
-    return "desktop started"
+    if not gamescope_running() and not overlay_listed():
+        msg = f"error: desktop start timed out ({reason})"
+        log(msg)
+        return msg
+    msg = f"desktop started ({reason})"
+    log(msg)
+    return msg
+
+
+def restart_desktop(*, reason: str = "restart") -> str:
+    """Stop then start asterism-desktop on the real user bus (FrameTop desktops restart)."""
+    if not steamvr_alive():
+        return "error: SteamVR not running; refusing desktop restart"
+    log(f"restarting asterism-desktop.service ({reason})")
+    stop_desktop(reason=f"restart:{reason}")
+    time.sleep(2)
+    systemctl_user("reset-failed", "asterism-desktop.service")
+    r = systemctl_user("start", "asterism-desktop.service")
+    if r.returncode != 0:
+        return f"error: restart start failed: {r.stderr.strip() or r.stdout.strip()}"
+    for _ in range(80):
+        if gamescope_running() or overlay_listed():
+            break
+        time.sleep(0.25)
+    if not gamescope_running() and not overlay_listed():
+        return "error: desktop restart timed out"
+    focus_desktop_overlay()
+    return "desktop restarted"
 
 
 def stop_desktop(*, reason: str = "admin") -> str:
@@ -188,22 +229,56 @@ def stop_desktop(*, reason: str = "admin") -> str:
     return "desktop stopped" if not desktop_running() else f"stop incomplete rc={r.returncode}"
 
 
-def focus_desktop_overlay() -> None:
-    """Ask SteamVR to show dashboard and prefer our overlay if vrcmd can dock it."""
-    try:
-        vrcmd("--showdashboard")
-        log("vrcmd --showdashboard")
-    except Exception as e:  # noqa: BLE001
-        log(f"showdashboard failed: {e}")
-    # Best-effort: dock our overlay into the dashboard (FrameTop pattern)
-    for key in (OVERLAY_KEY, f"{OVERLAY_KEY}.app.0"):
+def focus_desktop_overlay(*, force_dashboard: bool = False) -> None:
+    """Bring Asterism overlays forward without stomping saved dock modes.
+
+    Older PoC code always `vrcmd --dock-overlay dashboard`, which undid
+    layout.json world/theater floats after every SteamVR restart. FrameTop's
+    gamescope path restores dock mode via ft-layout apply instead.
+    """
+    if force_dashboard:
         try:
-            r = vrcmd("--dock-overlay", "dashboard", key)
-            if r.returncode == 0:
-                log(f"vrcmd --dock-overlay dashboard {key}")
-                break
+            vrcmd("--showdashboard")
+            log("vrcmd --showdashboard (force_dashboard)")
         except Exception as e:  # noqa: BLE001
-            log(f"dock-overlay {key}: {e}")
+            log(f"showdashboard failed: {e}")
+        for key in (OVERLAY_KEY, f"{OVERLAY_KEY}.app.0"):
+            try:
+                r = vrcmd("--dock-overlay", "dashboard", key)
+                if r.returncode == 0:
+                    log(f"vrcmd --dock-overlay dashboard {key}")
+                    break
+            except Exception as e:  # noqa: BLE001
+                log(f"dock-overlay {key}: {e}")
+        return
+
+    # Restore dashboard/theater/world from layout.json (default: world).
+    try:
+        msg = restore_layout(wait=45.0)
+        log(f"layout restore: {msg}")
+    except Exception as e:  # noqa: BLE001
+        log(f"layout restore failed ({e}); falling back to showdashboard")
+        try:
+            vrcmd("--showdashboard")
+        except Exception as e2:  # noqa: BLE001
+            log(f"showdashboard failed: {e2}")
+
+
+def restore_layout(*, wait: float = 45.0) -> str:
+    """Run asterism-layout apply on the real user bus (non-fatal)."""
+    layout_bin = ROOT / "scripts" / "asterism-layout"
+    if not layout_bin.is_file():
+        return "asterism-layout missing"
+    # Apply in a short-lived child so the supervisor/IPC loop is not blocked for --wait.
+    log(f"spawning asterism-layout apply --wait {int(wait)}")
+    subprocess.Popen(
+        [str(layout_bin), "apply", "--wait", str(int(wait))],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env_for_vr(),
+        start_new_session=True,
+    )
+    return "layout apply started"
 
 
 def show() -> dict:
@@ -272,12 +347,23 @@ def stop_desktop_cmd() -> dict:
     }
 
 
+def restart_desktop_cmd() -> dict:
+    msg = restart_desktop(reason="asterism-ctl")
+    return {
+        "ok": not msg.startswith("error:"),
+        "action": "restart-desktop",
+        "message": msg,
+        **_status_fields(),
+    }
+
+
 HANDLERS: dict[str, Callable[[], dict]] = {
     "show": show,
     "hide": hide,
     "toggle": toggle,
     "status": status,
     "stop-desktop": stop_desktop_cmd,
+    "restart-desktop": restart_desktop_cmd,
     "ping": lambda: {"ok": True, "action": "ping", "message": "pong"},
 }
 
@@ -346,11 +432,11 @@ class HttpHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
         cmd = path.lstrip("/")
-        if cmd in HANDLERS and cmd != "stop-desktop":
-            # Shell UI may POST /show /hide /toggle — never expose stop-desktop over HTTP by default
+        if cmd in HANDLERS and cmd not in ("stop-desktop", "restart-desktop"):
+            # Shell UI may POST /show /hide /toggle — never expose stop/restart over HTTP by default
             self._send(200, handle_command(cmd))
-        elif cmd == "stop-desktop":
-            self._send(403, {"ok": False, "error": "stop-desktop not allowed over HTTP"})
+        elif cmd in ("stop-desktop", "restart-desktop"):
+            self._send(403, {"ok": False, "error": f"{cmd} not allowed over HTTP"})
         else:
             self._send(404, {"ok": False, "error": "not found"})
 
@@ -372,13 +458,25 @@ def supervisor_tick() -> None:
     alive = steamvr_alive()
     if alive and not _steamvr_was_alive:
         log("SteamVR became healthy; ensuring desktop infrastructure")
-        ensure_desktop(reason="steamvr-up")
+        msg = ensure_desktop(reason="steamvr-up")
+        log(f"ensure after steamvr-up: {msg}")
+        if not msg.startswith("error:"):
+            # Bring the overlay forward after a SteamVR restart (visibility, not lifecycle).
+            focus_desktop_overlay()
     if not alive and _steamvr_was_alive:
         log("SteamVR went away; gracefully stopping desktop")
         stop_desktop(reason="steamvr-down")
     if alive and _steamvr_was_alive and not desktop_running():
         log("desktop missing while SteamVR healthy — crash recovery")
         ensure_desktop(reason="crash-recovery")
+    elif alive and _steamvr_was_alive:
+        # Unit can report active while gamescope died mid-session.
+        if (
+            systemctl_user("is-active", "asterism-desktop.service").stdout.strip() == "active"
+            and not gamescope_running()
+        ):
+            log("desktop unit active but gamescope gone — crash recovery")
+            ensure_desktop(reason="crash-recovery")
     _steamvr_was_alive = alive
 
 
@@ -394,6 +492,8 @@ def main() -> int:
     if steamvr_alive():
         _steamvr_was_alive = True
         ensure_desktop(reason="dashboard-start")
+        # Restore world/theater/dashboard from layout.json (do not force dashboard dock).
+        focus_desktop_overlay()
     else:
         log("SteamVR not yet up; waiting (will start desktop when healthy)")
 

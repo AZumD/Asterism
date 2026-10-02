@@ -93,8 +93,16 @@ sed "s|@REPO@|$root|g" "$root/desktop-settings/asterism-desktop-settings.desktop
 
 ln -sfn "$root/scripts/asterism-ctl.sh" "$HOME/.local/bin/asterism-ctl"
 ln -sfn "$root/scripts/asterism-displayctl" "$HOME/.local/bin/asterism-displayctl"
-chmod +x "$root"/scripts/*.sh "$root"/scripts/asterism-displayctl "$root"/desktop/*.sh \
-  "$root"/dashboard/*.py "$root"/desktop-settings/*.py 2>/dev/null || true
+ln -sfn "$root/scripts/asterism-layout" "$HOME/.local/bin/asterism-layout"
+ln -sfn "$root/desktop-settings/asterism-desktop-settings" "$HOME/.local/bin/asterism-desktop-settings"
+chmod +x "$root"/scripts/*.sh "$root"/scripts/asterism-displayctl "$root"/scripts/asterism-layout \
+  "$root"/desktop/*.sh \
+  "$root"/dashboard/*.py "$root"/desktop-settings/*.py \
+  "$root"/desktop-settings/asterism-desktop-settings \
+  "$root"/desktop-settings/asterism-shell-env.sh 2>/dev/null || true
+
+# Widen SteamVR floating overlay drag-resize (user vrsettings only).
+"$root/scripts/asterism-vrsettings.sh" --yes install || true
 
 if [ ! -f "$ASTERISM_CONFIG_DIR/asterism.conf" ]; then
   tr -d '\r' < "$root/conf/asterism.conf.example" > "$ASTERISM_CONFIG_DIR/asterism.conf"
@@ -107,6 +115,23 @@ from displays import default_config, save
 from pathlib import Path
 save(default_config(), Path("$ASTERISM_CONFIG_DIR/displays.json"))
 print("wrote displays.json")
+PY
+fi
+if [ ! -f "$ASTERISM_CONFIG_DIR/layout.json" ]; then
+  python3 - <<PY
+import sys
+sys.path.insert(0, "$root/layout")
+sys.path.insert(0, "$root/display")
+from displays import enabled_count, load as load_displays
+from layout import default_layout, save
+from pathlib import Path
+n = 1
+try:
+    n = enabled_count(load_displays())
+except Exception:
+    pass
+save(default_layout(n), Path("$ASTERISM_CONFIG_DIR/layout.json"))
+print("wrote layout.json")
 PY
 fi
 

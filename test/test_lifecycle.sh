@@ -14,8 +14,17 @@ check "show recovers only on crash (source)" \
   grep -q 'crash-recovery' "$root/dashboard/asterism-dashboard.py"
 check "hide does not stop desktop (source)" \
   grep -q 'desktop session kept alive' "$root/dashboard/asterism-dashboard.py"
-check "stop-desktop marked admin (source)" \
-  grep -q 'administrative/debug' "$root/dashboard/asterism-dashboard.py"
+check "focus restores layout not forced dashboard dock" \
+  grep -q 'without stomping saved dock modes' "$root/dashboard/asterism-dashboard.py"
+check "focus no longer always docks dashboard (source)" \
+  bash -c '! grep -q "Best-effort: dock our overlay into the dashboard" "$0"' "$root/dashboard/asterism-dashboard.py"
+
+check "restart-desktop handler exists" \
+  grep -q 'restart-desktop' "$root/dashboard/asterism-dashboard.py"
+check "session kills stale gamescope instead of exit 0" \
+  grep -q 'stale gamescope' "$root/desktop/asterism-session.sh"
+check "session does not early-exit 0 on gamescope match" \
+  bash -c '! grep -q "asterism gamescope already running" "$0"' "$root/desktop/asterism-session.sh"
 check "desktop BindsTo steamvr" \
   grep -q 'BindsTo=steamvr.service' "$root/systemd/asterism-desktop.service"
 check "no control-bar-close flag" bash -c '! grep -qE -- "--vr-overlay-enable-control-bar-close" "$0"' "$root/desktop/asterism-session.sh"

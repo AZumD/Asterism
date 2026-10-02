@@ -52,11 +52,6 @@ exec >>"$log" 2>&1
 
 asterism_log INFO "asterism-session start key=$overlay_key name=$overlay_name ${width}x${height} outputs=$output_count"
 
-if ! pgrep -x vrserver >/dev/null || ! pgrep -x vrcompositor >/dev/null; then
-  asterism_log ERROR "SteamVR (vrserver/vrcompositor) not running; abort desktop start"
-  exit 1
-fi
-
 if [ $((width * height)) -gt $((1920 * 1080)) ]; then
   asterism_log ERROR "resolution ${width}x${height} exceeds gamescope OpenVR buffer; abort"
   exit 1
@@ -78,9 +73,28 @@ export ASTERISM_OUTPUT_COUNT=$output_count
 export ASTERISM_WIDTH=$width
 export ASTERISM_HEIGHT=$height
 
+# Wait for SteamVR processes (WantedBy can race ahead of vrserver readiness).
+for _ in $(seq 1 60); do
+  if pgrep -x vrserver >/dev/null && pgrep -x vrcompositor >/dev/null; then
+    break
+  fi
+  sleep 0.5
+done
+if ! pgrep -x vrserver >/dev/null || ! pgrep -x vrcompositor >/dev/null; then
+  asterism_log ERROR "SteamVR (vrserver/vrcompositor) not running after wait; abort desktop start"
+  exit 1
+fi
+
+# Do NOT exit 0 if a leftover gamescope matches — Type=simple would mark the unit
+# inactive and SteamVR/WantedBy races would leave the desktop "started" then gone.
 if pgrep -f "[g]amescope .*--vr-overlay-key ${overlay_key}" >/dev/null; then
-  asterism_log INFO "asterism gamescope already running for $overlay_key"
-  exit 0
+  asterism_log WARN "stale gamescope for $overlay_key still present; sending SIGTERM before start"
+  pkill -TERM -f "[g]amescope .*--vr-overlay-key ${overlay_key}" 2>/dev/null || true
+  for _ in $(seq 1 40); do
+    pgrep -f "[g]amescope .*--vr-overlay-key ${overlay_key}" >/dev/null || break
+    sleep 0.25
+  done
+  pkill -KILL -f "[g]amescope .*--vr-overlay-key ${overlay_key}" 2>/dev/null || true
 fi
 
 inner=$root/desktop/asterism-session-inner.sh
@@ -111,6 +125,18 @@ gs_args=(
 if [ "${output_count:-1}" -gt 1 ]; then
   gs_args+=(--virtual-connector-strategy PerWindow)
   asterism_log INFO "multi-display: PerWindow strategy outputs=$output_count"
+fi
+
+# Restore VR dock/theater/world layout once PerWindow overlays exist (FrameTop ft-layout apply).
+# Must start before exec so gamescope remains the service MainPID.
+if [ -x "$root/scripts/asterism-layout" ]; then
+  (
+    export XDG_RUNTIME_DIR=/run/user/$(id -u)
+    export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+    "$root/scripts/asterism-layout" sync >/dev/null 2>&1 || true
+    "$root/scripts/asterism-layout" apply --wait 90 >>"$ASTERISM_LOG_DIR/layout.log" 2>&1 || true
+  ) &
+  disown || true
 fi
 
 exec gamescope "${gs_args[@]}" -- "$inner"

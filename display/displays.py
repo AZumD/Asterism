@@ -106,6 +106,17 @@ def validate_config(cfg: dict[str, Any]) -> dict[str, Any]:
     prim = next(x for x in out_displays if x["primary"])
     if not prim["enabled"]:
         raise DisplayConfigError("primary display must be enabled")
+    # gamescope PerWindow: every enabled output shares one pixel size (FrameTop gamescope rule).
+    enabled = [x for x in out_displays if x["enabled"]]
+    if len(enabled) > 1:
+        res0 = tuple(enabled[0]["resolution"])
+        for d in enabled[1:]:
+            if tuple(d["resolution"]) != res0:
+                raise DisplayConfigError(
+                    "multi-display requires identical resolution on every enabled output "
+                    f"(gamescope PerWindow); got {res0[0]}x{res0[1]} vs "
+                    f"{d['resolution'][0]}x{d['resolution'][1]}"
+                )
     return {"version": SCHEMA_VERSION, "displays": out_displays}
 
 

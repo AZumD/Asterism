@@ -49,28 +49,32 @@ def main() -> int:
     ap.add_argument("--path", type=Path, default=None, help="override displays.json path")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("list")
-    sub.add_parser("validate")
-    sub.add_parser("apply")
+    for name in ("list", "validate", "apply", "primary"):
+        p = sub.add_parser(name)
+        p.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     p_add = sub.add_parser("add")
+    p_add.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     p_add.add_argument("--resolution", default=None, help="WxH")
     p_rm = sub.add_parser("remove")
+    p_rm.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     p_rm.add_argument("id")
     p_set = sub.add_parser("set")
+    p_set.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     p_set.add_argument("id")
     p_set.add_argument("field", choices=["resolution", "scale", "rotation", "enabled"])
     p_set.add_argument("value")
     p_pri = sub.add_parser("set-primary")
+    p_pri.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     p_pri.add_argument("id")
-    sub.add_parser("primary")
 
     args = ap.parse_args()
     path = args.path
+    as_json = bool(getattr(args, "json", False))
 
     try:
         if args.cmd == "list":
             cfg = load(path)
-            out(cfg, args.json)
+            out(cfg, as_json)
         elif args.cmd == "validate":
             cfg = load(path)
             validate_config(cfg)
@@ -83,29 +87,25 @@ def main() -> int:
                 res = _validate_resolution(args.resolution)
             cfg = add_display(cfg, resolution=res)
             save(cfg, path)
-            out(cfg, args.json)
+            out(cfg, as_json)
         elif args.cmd == "remove":
             cfg = remove_display(load(path), args.id)
             save(cfg, path)
-            out(cfg, args.json)
+            out(cfg, as_json)
         elif args.cmd == "set":
-            val: object = args.value
-            if args.field == "enabled":
-                val = args.value
-            cfg = set_field(load(path), args.id, args.field, val)
+            cfg = set_field(load(path), args.id, args.field, args.value)
             save(cfg, path)
-            out(cfg, args.json)
+            out(cfg, as_json)
         elif args.cmd == "set-primary":
             cfg = set_primary(load(path), args.id)
             save(cfg, path)
-            out(cfg, args.json)
+            out(cfg, as_json)
         elif args.cmd == "primary":
             cfg = load(path)
             out(primary(cfg), True)
         elif args.cmd == "apply":
             cfg = load(path)
             hint = apply_hint(cfg)
-            # Stage: config already on disk; session reads it on restart
             out({"ok": True, "staged": True, **hint}, True)
         else:
             ap.error("unknown command")

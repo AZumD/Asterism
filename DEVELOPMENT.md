@@ -84,10 +84,14 @@ asterism-displayctl remove ID
 asterism-displayctl set ID resolution|scale|rotation|enabled VALUE
 asterism-displayctl set-primary ID
 asterism-displayctl apply   # stage; requires desktop restart
-asterism-desktop-settings   # GUI
+asterism-desktop-settings   # GTK3 GUI (host)
+asterism-ctl restart-desktop
 ```
 
-Apply stages config; **Restart Desktop Session** is explicit (confirms apps may close).
+Apply stages config; **Restart desktop** is explicit (confirms apps may close). GUI is GTK3/PyGObject — Frame has no `libtk`, and we do not pull FrameTop's distrobox+PySide6 settings stack. Restart uses the **real user D-Bus** (nested Plasma's private bus cannot reach systemd).
+
+After SteamVR comes back, the dashboard ensures the desktop and restores dock modes from `layout.json` (does **not** force dashboard dock).
+
 
 ## Phase C patch safety
 
@@ -104,7 +108,9 @@ After patch: clear `~/.cache/SteamVR/htmlcache` and **manually** restart SteamVR
 
 ## Borrowed from FrameTop (concepts only)
 
-gamescope OpenVR overlays, nested Plasma wrapper, `BindsTo`/`Requisite` vs SteamVR, SIGTERM-before-kill, hash-gated patching, display persistence lessons. **No FrameTop runtime dependency.**
+Reference: [AZumD/frametop](https://github.com/AZumD/frametop).
+
+gamescope OpenVR overlays, nested Plasma wrapper, `BindsTo`/`Requisite` vs SteamVR, SIGTERM-before-kill, hash-gated patching, display persistence, Desktop Settings host launcher + Screens-tab topology + restart-desktop confirm, KWin edge-to-edge outputs, `layout.json` dock/theater/world restore via `vrcmd` + world place via `asterism-place` / `asterism_pointer` (FrameTop `ft-layout` / `ft-pointer` place pattern). **No FrameTop runtime dependency** (no distrobox, no PySide6/Kirigami, no `ft_*` binaries).
 
 ## Recovery
 

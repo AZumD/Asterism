@@ -18,7 +18,20 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `dashboard/asterism-dashboard.py` | [ASTERISM-DASHBOARD.md](ASTERISM-DASHBOARD.md) |
 | `desktop/asterism-session.sh` | [ASTERISM-SESSION.md](ASTERISM-SESSION.md) |
 | `display/displays.py` | [DISPLAYS.md](DISPLAYS.md) |
-| `desktop-settings/` | [DESKTOP-SETTINGS.md](DESKTOP-SETTINGS.md) |
+| `layout/layout.py` | [LAYOUT.md](LAYOUT.md) |
+| `scripts/asterism-layout` | [ASTERISM-LAYOUT.md](ASTERISM-LAYOUT.md) |
+| `pointer/helper/asterism-place.cpp` | [ASTERISM-PLACE.md](ASTERISM-PLACE.md) |
+| `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) |
+| `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
+| `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |
+| `desktop/asterism-apply-outputs.sh` | [ASTERISM-APPLY-OUTPUTS.md](ASTERISM-APPLY-OUTPUTS.md) |
+| `desktop-settings/` (GTK3 topology GUI) | [DESKTOP-SETTINGS.md](DESKTOP-SETTINGS.md) |
+| `desktop-settings/asterism-desktop-settings` | [ASTERISM-DESKTOP-SETTINGS.md](ASTERISM-DESKTOP-SETTINGS.md) |
+| `desktop-settings/asterism-shell-env.sh` | [ASTERISM-SHELL-ENV.md](ASTERISM-SHELL-ENV.md) |
+| `test/_verify_desktop_settings.sh` | [_VERIFY_DESKTOP_SETTINGS.md](_VERIFY_DESKTOP_SETTINGS.md) |
+| `test/_verify_restart_and_autostart.sh` | [_VERIFY_RESTART_AND_AUTOSTART.md](_VERIFY_RESTART_AND_AUTOSTART.md) |
+| `test/_verify_layout_outputs.sh` | [_VERIFY_LAYOUT_OUTPUTS.md](_VERIFY_LAYOUT_OUTPUTS.md) |
+| `test/test_vrsettings.py` | [_VERIFY_VRSETTINGS.md](_VERIFY_VRSETTINGS.md) |
 | `compatibility/manifest.json` | [MANIFEST.md](MANIFEST.md) |
 
 Architecture: [../../DEVELOPMENT.md](../../DEVELOPMENT.md).

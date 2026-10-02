@@ -68,4 +68,30 @@ export XDG_DATA_DIRS=${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
 [ -f /etc/profile.d/flatpak.sh ] && { set +u; . /etc/profile.d/flatpak.sh; set -u; }
 
 asterism_log INFO "starting nested Plasma ${width}x${height} outputs=$output_count"
+
+# Background: snapshot plasmashell.env for SSH/menu launchers (FrameTop ft-shell-watch idea).
+# shellcheck disable=SC1091
+if [ -f "$root/desktop-settings/asterism-shell-env.sh" ]; then
+  (
+    # shellcheck disable=SC1091
+    . "$root/desktop-settings/asterism-shell-env.sh"
+    envfile=$(asterism_shell_env_path)
+    for _ in $(seq 1 90); do
+      sleep 1
+      if pid=$(asterism_find_nested_plasmashell 2>/dev/null); then
+        if asterism_shell_env_capture "$pid" "$envfile"; then
+          asterism_log INFO "wrote plasmashell.env from pid=$pid"
+          asterism_shell_env_load "$envfile" || true
+          # Fix overlapping KWin geometries (e.g. second output at x=1280 with 1920-wide primary).
+          export ASTERISM_WIDTH=$width ASTERISM_HEIGHT=$height ASTERISM_OUTPUT_COUNT=$output_count
+          "$root/desktop/asterism-apply-outputs.sh" || true
+          exit 0
+        fi
+      fi
+    done
+    asterism_log WARN "timed out waiting to capture plasmashell.env"
+  ) &
+  disown || true
+fi
+
 exec dbus-run-session startplasma-wayland

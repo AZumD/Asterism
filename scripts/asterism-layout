@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""CLI for Asterism VR layout (dock/theater/world + saved poses)."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "layout"))
+sys.path.insert(0, str(ROOT / "display"))
+
+from layout import (  # noqa: E402
+    LayoutError,
+    apply_layout,
+    apply_places,
+    default_layout,
+    load,
+    release_pointer,
+    remember_world_docks,
+    save,
+    screen_keys,
+    sync_layout_to_display_count,
+)
+from displays import enabled_count, load as load_displays  # noqa: E402
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="asterism-layout")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("show", help="print layout.json")
+    ap = sub.add_parser("apply", help="restore dock modes onto live overlays")
+    ap.add_argument("--wait", type=float, default=60.0)
+    ap.add_argument(
+        "--place",
+        action="store_true",
+        help="also laser-grab world panels to layout.json poses (steals laser; opt-in)",
+    )
+    sub.add_parser("place", help="laser-grab world panels to layout.json poses")
+    sub.add_parser("release-pointer", help="force-hide asterism_pointer virtual controller")
+    sub.add_parser("keys", help="list live PerWindow overlay keys")
+    sp = sub.add_parser("set-dock", help="set dock mode for screen index (0-based)")
+    sp.add_argument("index", type=int)
+    sp.add_argument("mode", choices=("dashboard", "theater", "world"))
+    sub.add_parser("sync", help="resize layout.screens to match displays.json")
+    sub.add_parser("init", help="write default layout for current display count")
+    sub.add_parser("remember-world", help="set every screen dock=world (persist float)")
+
+    args = p.parse_args()
+    try:
+        if args.cmd == "show":
+            print(json.dumps(load(), indent=2))
+        elif args.cmd == "keys":
+            print(json.dumps(screen_keys(), indent=2))
+        elif args.cmd == "apply":
+            print(json.dumps(apply_layout(wait=args.wait, place=args.place or None), indent=2))
+        elif args.cmd == "place":
+            print(json.dumps(apply_places(), indent=2))
+        elif args.cmd == "release-pointer":
+            print(json.dumps(release_pointer(), indent=2))
+        elif args.cmd == "set-dock":
+            layout = load()
+            if args.index < 0 or args.index >= len(layout["screens"]):
+                raise LayoutError(f"index {args.index} out of range")
+            layout["screens"][args.index]["dock"] = args.mode
+            layout["mode"] = "custom"
+            save(layout)
+            print(json.dumps(layout["screens"][args.index], indent=2))
+        elif args.cmd == "sync":
+            n = enabled_count(load_displays())
+            print(json.dumps(sync_layout_to_display_count(n), indent=2))
+        elif args.cmd == "init":
+            n = enabled_count(load_displays())
+            print(json.dumps(save(default_layout(n)), indent=2))
+        elif args.cmd == "remember-world":
+            print(json.dumps(remember_world_docks(), indent=2))
+    except LayoutError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

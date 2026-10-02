@@ -1,8 +1,10 @@
 [Desktop Entry]
 Type=Application
 Name=Asterism Desktop Settings
-Comment=Asterism Linux display topology (not spatial VR placement)
-Exec=@REPO@/desktop-settings/asterism_desktop_settings.py
+GenericName=Linux display topology for the VR desktop
+Comment=Asterism display count, resolution, scale (not spatial VR placement)
+Exec=@REPO@/desktop-settings/asterism-desktop-settings
 Icon=preferences-desktop-display
 Categories=Settings;DesktopSettings;
+Keywords=display;screen;monitor;resolution;asterism;steamvr;
 Terminal=false

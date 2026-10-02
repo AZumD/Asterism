@@ -4,5 +4,8 @@ HEIGHT=800
 # Overlay identity (must match compatibility/manifest.json)
 OVERLAY_KEY=asterism.desktop
 OVERLAY_NAME=Desktop
-# Physical width in metres for the dashboard panel
-PHYS_WIDTH=1.2
+# Physical width in metres for the dashboard / floating panel (gamescope
+# --vr-overlay-physical-width). Stock gamescope default is 2.0; 1.2 feels small
+# in world space. Drag-resize range is separately widened via asterism-vrsettings.sh
+# (dashboard.scaleSliderMax).
+PHYS_WIDTH=2.5

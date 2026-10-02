@@ -1,0 +1,25 @@
+{
+  "pending_apply": true,
+  "note": "Expected hashes AFTER successful Phase C apply (prepared payload on Frame). Apply with: sudo ~/asterism/scripts/patch-steamvr-ui.sh --yes",
+  "stock": {
+    "systemui.html": "0cf9002ead850fa1ede7c16d7eb242247a0eb585e93469f634d1d50a8931b637",
+    "systemui.js": "98123dd78ba98284acda95c2ee844c93e4d59b7e135fc0cd452e631407faf7c4"
+  },
+  "after_patch_expected": {
+    "systemui.html": "c0a5636a515f3f3c71373d90ca2188322fbfefb76c50168eba8b4f738530369a",
+    "asterism_shell.js": "85107172b94ae69ac86111360212cfb601fc6c10e5155370ee0fed25f330b216"
+  },
+  "files_touched": [
+    "/opt/steamvr/resources/webinterface/dashboard/systemui.html",
+    "/opt/steamvr/resources/webinterface/dashboard/asterism_shell.js (new)"
+  ],
+  "not_touched": [
+    "systemui.js",
+    "chunk~*.js"
+  ],
+  "ui_element": "Fixed bottom-left button labelled Desktop; calls VRHTML.VRClient.ShowDashboardOverlay({overlayKey:'asterism.desktop'}) and POST http://127.0.0.1:47831/show",
+  "manual_after_apply": [
+    "rm -rf ~/.cache/SteamVR/htmlcache",
+    "systemctl --user restart steamvr.service"
+  ]
+}
