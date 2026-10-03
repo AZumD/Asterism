@@ -14,6 +14,7 @@
 #   asterism-dashmgr find-live-uo asterism.desktop.app.2
 #   asterism-dashmgr inspect-undocked-render asterism.desktop.app.2
 #   asterism-dashmgr inspect-undocked-instance asterism.desktop.app.2
+#   asterism-dashmgr inspect-world-lifecycle asterism.desktop.app.2
 #   asterism-dashmgr inspect-just-floated asterism.desktop.app.2
 #   asterism-dashmgr clear-just-floated asterism.desktop.app.2
 #   asterism-dashmgr force-dashboard-render
@@ -128,6 +129,10 @@ PY
   inspect-undocked-instance)
     key=${1:?overlay key}
     req "$(python3 -c "import json; print(json.dumps({'cmd':'inspect-undocked-instance','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  inspect-world-lifecycle)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'inspect-world-lifecycle','wait':10,'overlay_key':'$key'}))")"
     ;;
   inspect-just-floated)
     key=${1:?overlay key}

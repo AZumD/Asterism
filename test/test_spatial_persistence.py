@@ -189,6 +189,7 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
         'msg.cmd === "inspect-undocked-instance"',
+        'msg.cmd === "inspect-world-lifecycle"',
         'msg.cmd === "inspect-just-floated"',
         'msg.cmd === "clear-just-floated"',
         'msg.cmd === "force-dashboard-render"',
@@ -196,6 +197,7 @@ def test_shell_commands_present() -> None:
         "function restoreViaHand",
         "function inspectUndockedRender",
         "function inspectUndockedInstance",
+        "function inspectWorldLifecycle",
         "function inspectJustFloated",
         "function clearJustFloated",
         "function findMountedUndockedOverlayForFrame",
@@ -203,6 +205,7 @@ def test_shell_commands_present() -> None:
         "findLiveUndockedOverlayForFrame",
         "initializedFromNull",
         "SetJustFloatedFromDashboard",
+        "panelTranslationForResizeOrigin",
         "react-fiber-setState+map",
         "JSON-safe Frame resolve",
     ):
@@ -241,6 +244,7 @@ def test_dashmgr_rejects_non_asterism_new_cmds() -> None:
         "get-live-world",
         "inspect-undocked-render",
         "inspect-undocked-instance",
+        "inspect-world-lifecycle",
         "inspect-just-floated",
         "clear-just-floated",
     ):

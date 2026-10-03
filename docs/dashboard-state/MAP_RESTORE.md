@@ -100,21 +100,23 @@ CLI:
 
 Cold automatic World restore live finding:
 
-- Frame may be World + weak-mounted `UndockedOverlay` with `xfTransform` undefined.
-- Null xf ≠ unmounted. Phase-1 `direct-restore` initializes P before hide so
-  Valve's nudge reaction can run (`if (null == xfTransform) return`).
-- `clear-just-floated` before hide is **wrong**: MobX reacts to true→false and
-  still nudges. Auto-restore lets hide consume the flag, waits
-  `justFloatedFromDashboard==false`, then phase-2 `direct-restore` + strict verify.
+- Phase-1 `direct-restore` initializes possibly-null xf before hide.
+- After hide, `justFloatedFromDashboard` may stay true forever — do not wait
+  for it to clear itself.
+- Settle geometry via `inspect-world-lifecycle`, then if flag is still true
+  intentionally `clear-just-floated` (triggers nudge), wait settle, then
+  phase-2 `direct-restore` + consecutive-sample stable verify.
 
 ```
 inspect-undocked-instance app.2
 direct-restore app.2 P.json       # phase 1
 get-live-world app.2
 # hide
-inspect-just-floated app.2        # wait until false
-direct-restore app.2 P.json       # phase 2 — final pose
-get-live-world app.2              # SUCCESS criterion
+inspect-world-lifecycle app.2     # geometry settle
+clear-just-floated app.2          # only if still true
+inspect-world-lifecycle app.2     # post-float settle
+direct-restore app.2 P.json       # phase 2
+get-live-world app.2              # stable SUCCESS
 ```
 
 Contingency Valve patch (Asterism-only register):  

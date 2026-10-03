@@ -9,8 +9,8 @@ No-SteamVR tests for automatic spatial persistence:
 - v1→v2 migration
 - snapshot prefers get-live-world
 - World readiness uses inspect-undocked-instance (weak); phase-1 direct may init null xf
-- After hide: wait inspect-just-floated false → phase-2 direct → final_verify is success
-- clear-just-floated is NOT used by automatic restore
+- After hide: geometry settle → optional clear-just-floated if stale true → post-float settle → phase-2 direct → stable final_verify
+- Stale true float flag must not timeout; already-false skips clear
 - peer-safe snapshot failure
 - World restore presentation-first
 - Dashboard/Theater restore

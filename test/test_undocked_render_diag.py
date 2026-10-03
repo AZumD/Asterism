@@ -32,12 +32,16 @@ def test_shell_inspect_and_force_markers() -> None:
         "function forceDashboardRender",
         'msg.cmd === "inspect-undocked-render"',
         'msg.cmd === "inspect-undocked-instance"',
+        'msg.cmd === "inspect-world-lifecycle"',
         'msg.cmd === "inspect-just-floated"',
         'msg.cmd === "clear-just-floated"',
         'msg.cmd === "force-dashboard-render"',
+        "function inspectWorldLifecycle",
         "function inspectJustFloated",
         "function clearJustFloated",
         "SetJustFloatedFromDashboard",
+        "panelTranslationForResizeOrigin",
+        "beingDragged",
         "justFloatedFromDashboard",
         "isActiveDashboardFrame",
         "react-fiber-weak",
@@ -86,11 +90,13 @@ def test_cli_commands_present() -> None:
     cli = (ROOT / "scripts" / "asterism-dashmgr").read_text(encoding="utf-8")
     assert "inspect-undocked-render)" in cli
     assert "inspect-undocked-instance)" in cli
+    assert "inspect-world-lifecycle)" in cli
     assert "inspect-just-floated)" in cli
     assert "clear-just-floated)" in cli
     assert "force-dashboard-render)" in cli
     assert "'cmd':'inspect-undocked-render'" in cli.replace(" ", "")
     assert "'cmd':'inspect-undocked-instance'" in cli.replace(" ", "")
+    assert "'cmd':'inspect-world-lifecycle'" in cli.replace(" ", "")
     assert "'cmd':'inspect-just-floated'" in cli.replace(" ", "")
     assert "'cmd':'clear-just-floated'" in cli.replace(" ", "")
     assert "'cmd':'force-dashboard-render'" in cli.replace(" ", "")
@@ -102,6 +108,7 @@ def test_dashmgr_enqueue_policy() -> None:
     mod.dashmgr_reset_for_tests()
     assert "inspect-undocked-render" in mod._SUPPORTED_CMDS
     assert "inspect-undocked-instance" in mod._SUPPORTED_CMDS
+    assert "inspect-world-lifecycle" in mod._SUPPORTED_CMDS
     assert "inspect-just-floated" in mod._SUPPORTED_CMDS
     assert "clear-just-floated" in mod._SUPPORTED_CMDS
     assert "force-dashboard-render" in mod._SUPPORTED_CMDS
@@ -109,6 +116,7 @@ def test_dashmgr_enqueue_policy() -> None:
     for cmd in (
         "inspect-undocked-render",
         "inspect-undocked-instance",
+        "inspect-world-lifecycle",
         "inspect-just-floated",
         "clear-just-floated",
     ):

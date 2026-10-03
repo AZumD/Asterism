@@ -1149,6 +1149,117 @@
     };
   }
 
+  function jsonSafeVec3(v) {
+    if (v == null || typeof v !== "object") return null;
+    try {
+      var x = Number(v.x);
+      var y = Number(v.y);
+      var z = Number(v.z);
+      if (!isFinite(x) || !isFinite(y) || !isFinite(z)) return null;
+      return { x: x, y: y, z: z };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Read-only World float lifecycle + geometry inspect (no mutation).
+   * Combines Frame docking fields with weak-mounted instance state.
+   */
+  function inspectWorldLifecycle(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var resolved = resolveFrames(overlayKey);
+    var frames = resolved.frames || [];
+    if (frames.length !== 1) {
+      return {
+        ok: false,
+        error:
+          frames.length === 0
+            ? "no frame for overlay"
+            : "expected exactly one Frame, got " + frames.length,
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var frame = frames[0];
+    if (!frame || !frame.docking) {
+      return {
+        ok: false,
+        error: "frame.docking missing",
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var justFloated = null;
+    var isActive = null;
+    var panelT = null;
+    var scale = null;
+    var beingDragged = null;
+    try {
+      if ("justFloatedFromDashboard" in frame.docking) {
+        justFloated = !!frame.docking.justFloatedFromDashboard;
+      }
+    } catch (_) {}
+    try {
+      if ("isActiveDashboardFrame" in frame) {
+        isActive = !!frame.isActiveDashboardFrame;
+      }
+    } catch (_) {}
+    try {
+      panelT = jsonSafeVec3(frame.docking.panelTranslationForResizeOrigin);
+    } catch (_) {}
+    try {
+      if (frame.size && frame.size.scaleForActivePage != null) {
+        var s = Number(frame.size.scaleForActivePage);
+        scale = isFinite(s) ? s : null;
+      }
+    } catch (_) {}
+    try {
+      if ("beingDragged" in frame.docking) {
+        beingDragged = !!frame.docking.beingDragged;
+      }
+    } catch (_) {}
+
+    var mounted = findMountedUndockedOverlayForFrame(frame);
+    var mountedWeak = !!(mounted.diag && mounted.diag.found);
+    var xfNullish = null;
+    var xfOut = undefined;
+    if (mounted.instance) {
+      try {
+        xfNullish =
+          !mounted.instance.state ||
+          mounted.instance.state.xfTransform == null;
+        if (!xfNullish) {
+          var cloned = cloneTransform(mounted.instance.state.xfTransform);
+          if (cloned) {
+            try {
+              JSON.stringify(cloned);
+              xfOut = cloned;
+            } catch (_) {}
+          }
+        }
+      } catch (_) {
+        xfNullish = null;
+      }
+    }
+
+    var out = {
+      ok: true,
+      path: "inspect-world-lifecycle",
+      frameID: frame.frameID != null ? String(frame.frameID) : null,
+      dockLocationName: ywqName(frame.docking.dockLocation),
+      justFloatedFromDashboard: justFloated,
+      isActiveDashboardFrame: isActive,
+      panelTranslationForResizeOrigin: panelT,
+      scaleForActivePage: scale,
+      beingDragged: beingDragged,
+      mountedWeak: mountedWeak,
+      xfTransformNullish: xfNullish,
+    };
+    if (xfOut !== undefined) out.xfTransform = xfOut;
+    return out;
+  }
+
   /** Read-only float-lifecycle flag inspect (no mutation). */
   function inspectJustFloated(overlayKey) {
     if (!looksAsterismKey(overlayKey)) {
@@ -1197,9 +1308,10 @@
   }
 
   /**
-   * Diagnostic only: clear justFloatedFromDashboard.
-   * NOT used by automatic World restore — flipping true→false itself
-   * triggers Valve's MobX nudge reaction.
+   * Clear justFloatedFromDashboard via SetJustFloatedFromDashboard(false).
+   * Diagnostic generally; also used narrowly by exact World restore AFTER hide
+   * + geometry settle to intentionally consume a stale cold-start float one-shot
+   * (true→false triggers Valve's MobX nudge — expected before final restore).
    */
   function clearJustFloated(overlayKey) {
     if (!looksAsterismKey(overlayKey)) {
@@ -1265,7 +1377,7 @@
       before: before,
       after: after,
       note:
-        "diagnostic only — auto World restore lets Valve consume the flag via hide, then re-applies P",
+        "true→false triggers Valve float nudge; exact World restore uses this only after hide+geometry settle",
     };
   }
 
@@ -1487,6 +1599,8 @@
         result = inspectUndockedRender(msg.overlay_key);
       else if (msg.cmd === "inspect-undocked-instance")
         result = inspectUndockedInstance(msg.overlay_key);
+      else if (msg.cmd === "inspect-world-lifecycle")
+        result = inspectWorldLifecycle(msg.overlay_key);
       else if (msg.cmd === "inspect-just-floated")
         result = inspectJustFloated(msg.overlay_key);
       else if (msg.cmd === "clear-just-floated")
@@ -1616,6 +1730,7 @@
           findLiveUndocked: findLiveDiag,
           inspectUndockedRender: inspectUndockedRender,
           inspectUndockedInstance: inspectUndockedInstance,
+          inspectWorldLifecycle: inspectWorldLifecycle,
           inspectJustFloated: inspectJustFloated,
           clearJustFloated: clearJustFloated,
           forceDashboardRender: forceDashboardRender,

@@ -80,23 +80,34 @@ wait World + inspect-undocked-instance (weak mount)
 direct-restore(P)
 verify get-live-world == P              # intermediate
 
-POST /hide                              # Valve runs normal float lifecycle / nudge
-wait inspect-just-floated: justFloatedFromDashboard == false
+POST /hide
+wait geometry settle via inspect-world-lifecycle
+  (World + mountedWeak + !beingDragged + stable panel/scale)
+
+if justFloatedFromDashboard:
+  clear-just-floated                    # INTENTIONAL: consumes stale cold-start one-shot
+  wait flag false + post-float settle   # nudge may move xf — expected
 
 # Phase 2 — persisted pose wins after nudge
 direct-restore(P)
-verify get-live-world == P              # SUCCESS criterion
+stable verify get-live-world == P       # SUCCESS: consecutive samples
 ```
 
 A mounted `UndockedOverlay` may exist at cold startup with
-`state.xfTransform` undefined. Null `xfTransform` is **not** evidence the
-component is unmounted. Valve's nudge reaction no-ops while xf is null, so
-phase-1 direct-restore is required before hide.
+`state.xfTransform` undefined. Null xf ≠ unmounted. Phase-1 direct-restore
+is required before hide so Valve's nudge reaction can run.
 
-Live-proven: clearing `justFloatedFromDashboard` before hide is **wrong** —
-MobX reacts to the true→false transition and still applies the local
-`(0,+0.06,-0.06)` nudge. Automatic restore never calls `clear-just-floated`;
-it lets Valve consume the flag via hide, then re-applies P.
+Live-proven:
+
+- Waiting for `justFloatedFromDashboard` to become false by itself after hide
+  can hang forever on cold start.
+- Clearing the flag **before** hide is wrong (MobX still nudges).
+- Clearing the flag **after** hide + geometry settle is correct for exact
+  restore: it deliberately triggers the local `(0,+0.06,-0.06)` nudge, then
+  phase-2 re-applies P.
+
+`clear-just-floated` remains a general diagnostic, and is also used narrowly
+by exact persisted World restoration in that post-hide window only.
 
 Without a saved World transform: Dashboard→show→World→wait weak mount→hide.
 No invent pose, no clear flag, no final direct-restore.

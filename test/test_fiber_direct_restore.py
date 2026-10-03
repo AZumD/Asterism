@@ -219,6 +219,7 @@ def test_shell_fiber_direct_restore_markers() -> None:
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
         'msg.cmd === "inspect-undocked-instance"',
+        'msg.cmd === "inspect-world-lifecycle"',
         'msg.cmd === "inspect-just-floated"',
         'msg.cmd === "clear-just-floated"',
         'msg.cmd === "force-dashboard-render"',
@@ -229,9 +230,13 @@ def test_shell_fiber_direct_restore_markers() -> None:
         "isWeakUndockedInstance",
         "initializedFromNull",
         "previousXfTransformNullish",
+        "function inspectWorldLifecycle",
         "function inspectJustFloated",
         "function clearJustFloated",
         "SetJustFloatedFromDashboard(false)",
+        "panelTranslationForResizeOrigin",
+        "scaleForActivePage",
+        "beingDragged",
         "justFloatedFromDashboard",
         "isActiveDashboardFrame",
         "forceDashboardRender",
@@ -241,7 +246,9 @@ def test_shell_fiber_direct_restore_markers() -> None:
         assert n in shell, n
     # direct-restore must use weak mounted finder, not strict find-live
     dr = shell[
-        shell.index("function directRestore") : shell.index("function inspectJustFloated")
+        shell.index("function directRestore") : shell.index(
+            "function inspectWorldLifecycle"
+        )
     ]
     assert "findMountedUndockedOverlayForFrame" in dr
     assert "findLiveUndockedOverlayForFrame" not in dr

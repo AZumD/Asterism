@@ -622,21 +622,56 @@ def _restore_world(
         out["hide"] = mat.get("hide")
         return out
 
-    # Let Valve complete normal floating lifecycle (do NOT clear-just-floated:
-    # flipping true→false itself triggers the MobX nudge reaction).
+    # Hide: do NOT clear-just-floated before hide (suppressing pre-hide is wrong).
     _cleanup_hide()
     out["hide"] = mat.get("hide")
 
-    float_wait = _wait_float_lifecycle_done(overlay_key, http=http)
-    out["float_lifecycle_wait"] = {
-        "ok": float_wait.get("ok"),
-        "error": float_wait.get("error"),
-        "last": float_wait.get("last"),
-        "already_false": float_wait.get("already_false"),
+    # Geometry settle: World + mounted + not dragging + stable panel/scale
+    geom = _wait_geometry_settle(overlay_key, http=http)
+    out["geometry_settle"] = {
+        "ok": geom.get("ok"),
+        "error": geom.get("error"),
+        "samples": geom.get("samples"),
+        "final": geom.get("final"),
     }
-    if not float_wait.get("ok"):
+    if not geom.get("ok"):
         out["ok"] = False
-        out["error"] = float_wait.get("error") or "float lifecycle timeout"
+        out["error"] = geom.get("error") or "geometry settle timeout"
+        return out
+
+    float_before = geom.get("final") or {}
+    out["float_before"] = {
+        "justFloatedFromDashboard": float_before.get("justFloatedFromDashboard"),
+        "beingDragged": float_before.get("beingDragged"),
+        "mountedWeak": float_before.get("mountedWeak"),
+        "dockLocationName": float_before.get("dockLocationName"),
+    }
+
+    # Intentionally consume stale cold-start float one-shot AFTER settle.
+    # true→false triggers Valve's MobX nudge — expected before final restore.
+    consume = _consume_stale_float_flag(overlay_key, http=http, sample=float_before)
+    out["float_consume"] = {
+        "ok": consume.get("ok"),
+        "skipped": consume.get("skipped"),
+        "cleared": consume.get("cleared"),
+        "error": consume.get("error"),
+        "clear": consume.get("clear"),
+    }
+    if not consume.get("ok"):
+        out["ok"] = False
+        out["error"] = consume.get("error") or "float flag consume failed"
+        return out
+
+    post_float = _wait_post_float_settle(overlay_key, http=http)
+    out["post_float_settle"] = {
+        "ok": post_float.get("ok"),
+        "error": post_float.get("error"),
+        "samples": post_float.get("samples"),
+        "final": post_float.get("final"),
+    }
+    if not post_float.get("ok"):
+        out["ok"] = False
+        out["error"] = post_float.get("error") or "post-float settle timeout"
         return out
 
     # Phase 2: final persisted pose wins after nudge has been consumed
@@ -661,8 +696,11 @@ def _restore_world(
         out["final_restore"] = {"ok": False, "error": str(e)}
         return out
 
-    final_verify = _wait_live_world_match(overlay_key, world_xf, http=http)
+    final_verify = _wait_live_world_stable_match(
+        overlay_key, world_xf, http=http, stable_samples=3
+    )
     out["final_verify"] = _verify_snap(final_verify)
+    out["final_verify"]["stable_samples"] = final_verify.get("stable_samples")
     out["ok"] = bool(final_verify.get("ok"))
     if out["ok"]:
         out["path"] = "world-materialization+direct-restore"
@@ -674,56 +712,242 @@ def _restore_world(
     return out
 
 
-def _wait_float_lifecycle_done(
+def _lifecycle_sample(overlay_key: str, *, http: str) -> dict[str, Any]:
+    return _result(
+        dashmgr_request(
+            "inspect-world-lifecycle",
+            http=http,
+            overlay_key=overlay_key,
+            wait=8.0,
+        )
+    )
+
+
+def _geometry_key(sample: dict[str, Any]) -> tuple[Any, ...]:
+    panel = sample.get("panelTranslationForResizeOrigin")
+    if isinstance(panel, dict):
+        try:
+            panel_t = (
+                round(float(panel["x"]), 4),
+                round(float(panel["y"]), 4),
+                round(float(panel["z"]), 4),
+            )
+        except Exception:
+            panel_t = None
+    else:
+        panel_t = None
+    scale = sample.get("scaleForActivePage")
+    try:
+        scale_k = round(float(scale), 4) if scale is not None else None
+    except Exception:
+        scale_k = None
+    return (
+        normalize_presentation(sample.get("dockLocationName")),
+        bool(sample.get("mountedWeak")),
+        sample.get("beingDragged"),
+        panel_t,
+        scale_k,
+    )
+
+
+def _geometry_ready(sample: dict[str, Any]) -> bool:
+    if not sample.get("ok"):
+        return False
+    if normalize_presentation(sample.get("dockLocationName")) != "world":
+        return False
+    if not sample.get("mountedWeak"):
+        return False
+    if sample.get("beingDragged") is True:
+        return False
+    return True
+
+
+def _wait_geometry_settle(
     overlay_key: str,
     *,
     http: str,
     timeout: float = 10.0,
+    stable_samples: int = 3,
+    interval: float = 0.3,
 ) -> dict[str, Any]:
-    """Wait until justFloatedFromDashboard is false (Valve consumed the one-shot)."""
+    """Wait for World+mounted+!dragged and stable panel/scale for N samples."""
     deadline = time.time() + timeout
+    streak = 0
+    prev_key: tuple[Any, ...] | None = None
     last: dict[str, Any] = {}
-    first = True
+    samples = 0
     while time.time() < deadline:
         try:
-            insp = _result(
-                dashmgr_request(
-                    "inspect-just-floated",
-                    http=http,
-                    overlay_key=overlay_key,
-                    wait=8.0,
-                )
-            )
-            flag = insp.get("justFloatedFromDashboard")
+            sample = _lifecycle_sample(overlay_key, http=http)
+            samples += 1
             last = {
-                "ok": insp.get("ok"),
-                "frameID": insp.get("frameID"),
-                "dockLocationName": insp.get("dockLocationName"),
-                "justFloatedFromDashboard": flag,
-                "isActiveDashboardFrame": insp.get("isActiveDashboardFrame"),
-                "error": insp.get("error"),
+                "ok": sample.get("ok"),
+                "dockLocationName": sample.get("dockLocationName"),
+                "mountedWeak": sample.get("mountedWeak"),
+                "beingDragged": sample.get("beingDragged"),
+                "justFloatedFromDashboard": sample.get("justFloatedFromDashboard"),
+                "panelTranslationForResizeOrigin": sample.get(
+                    "panelTranslationForResizeOrigin"
+                ),
+                "scaleForActivePage": sample.get("scaleForActivePage"),
+                "error": sample.get("error"),
             }
-            if insp.get("ok") and flag is False:
-                return {
-                    "ok": True,
-                    "already_false": first,
-                    "last": last,
-                }
-            if insp.get("ok") and flag is None:
-                # Property unavailable — cannot wait; fail cleanly
-                return {
-                    "ok": False,
-                    "error": "justFloatedFromDashboard unavailable",
-                    "last": last,
-                }
+            if _geometry_ready(sample):
+                key = _geometry_key(sample)
+                if prev_key is not None and key == prev_key:
+                    streak += 1
+                else:
+                    streak = 1
+                    prev_key = key
+                if streak >= stable_samples:
+                    return {
+                        "ok": True,
+                        "samples": samples,
+                        "stable_samples": streak,
+                        "final": last,
+                    }
+            else:
+                streak = 0
+                prev_key = None
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             last = {"error": str(e)}
-        first = False
-        time.sleep(0.25)
+            streak = 0
+            prev_key = None
+        time.sleep(interval)
     return {
         "ok": False,
-        "error": "timeout waiting for justFloatedFromDashboard==false",
-        "last": last,
+        "samples": samples,
+        "final": last,
+        "error": "timeout waiting for geometry settle",
+    }
+
+
+def _consume_stale_float_flag(
+    overlay_key: str,
+    *,
+    http: str,
+    sample: dict[str, Any],
+) -> dict[str, Any]:
+    """If justFloated is true after settle, intentionally clear it (triggers nudge)."""
+    flag = sample.get("justFloatedFromDashboard")
+    if flag is False:
+        return {"ok": True, "skipped": True, "cleared": False}
+    if flag is not True:
+        return {
+            "ok": False,
+            "skipped": False,
+            "cleared": False,
+            "error": "justFloatedFromDashboard unavailable after geometry settle",
+        }
+    try:
+        cleared = _result(
+            dashmgr_request(
+                "clear-just-floated",
+                http=http,
+                overlay_key=overlay_key,
+                wait=10.0,
+            )
+        )
+        if not cleared.get("ok"):
+            return {
+                "ok": False,
+                "skipped": False,
+                "cleared": False,
+                "clear": cleared,
+                "error": cleared.get("error") or "clear-just-floated failed",
+            }
+        return {
+            "ok": True,
+            "skipped": False,
+            "cleared": True,
+            "clear": {
+                "ok": True,
+                "before": cleared.get("before"),
+                "after": cleared.get("after"),
+                "frameID": cleared.get("frameID"),
+            },
+        }
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        return {"ok": False, "skipped": False, "cleared": False, "error": str(e)}
+
+
+def _wait_post_float_settle(
+    overlay_key: str,
+    *,
+    http: str,
+    timeout: float = 8.0,
+    stable_samples: int = 3,
+    interval: float = 0.3,
+) -> dict[str, Any]:
+    """After optional clear: wait flag false, !dragged, stable geometry/xf window."""
+    deadline = time.time() + timeout
+    streak = 0
+    prev_key: tuple[Any, ...] | None = None
+    last: dict[str, Any] = {}
+    samples = 0
+    while time.time() < deadline:
+        try:
+            sample = _lifecycle_sample(overlay_key, http=http)
+            samples += 1
+            last = {
+                "ok": sample.get("ok"),
+                "justFloatedFromDashboard": sample.get("justFloatedFromDashboard"),
+                "beingDragged": sample.get("beingDragged"),
+                "mountedWeak": sample.get("mountedWeak"),
+                "dockLocationName": sample.get("dockLocationName"),
+                "panelTranslationForResizeOrigin": sample.get(
+                    "panelTranslationForResizeOrigin"
+                ),
+                "scaleForActivePage": sample.get("scaleForActivePage"),
+                "xfTransformNullish": sample.get("xfTransformNullish"),
+                "error": sample.get("error"),
+            }
+            ready = (
+                sample.get("ok")
+                and sample.get("justFloatedFromDashboard") is False
+                and sample.get("beingDragged") is not True
+                and _geometry_ready(sample)
+            )
+            if ready:
+                # Include xf nullish + panel/scale in stability key
+                xf = sample.get("xfTransform")
+                xf_k = None
+                if isinstance(xf, dict) and isinstance(xf.get("translation"), dict):
+                    t = xf["translation"]
+                    try:
+                        xf_k = (
+                            round(float(t["x"]), 4),
+                            round(float(t["y"]), 4),
+                            round(float(t["z"]), 4),
+                        )
+                    except Exception:
+                        xf_k = None
+                key = _geometry_key(sample) + (xf_k, sample.get("xfTransformNullish"))
+                if prev_key is not None and key == prev_key:
+                    streak += 1
+                else:
+                    streak = 1
+                    prev_key = key
+                if streak >= stable_samples:
+                    return {
+                        "ok": True,
+                        "samples": samples,
+                        "stable_samples": streak,
+                        "final": last,
+                    }
+            else:
+                streak = 0
+                prev_key = None
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = {"error": str(e)}
+            streak = 0
+            prev_key = None
+        time.sleep(interval)
+    return {
+        "ok": False,
+        "samples": samples,
+        "final": last,
+        "error": "timeout waiting for post-float settle",
     }
 
 
@@ -734,10 +958,30 @@ def _wait_live_world_match(
     http: str,
     timeout: float = 8.0,
 ) -> dict[str, Any]:
-    """Bounded poll of strict get-live-world until xf matches expected P."""
+    """Bounded poll of strict get-live-world until xf matches expected P (one hit)."""
+    return _wait_live_world_stable_match(
+        overlay_key,
+        expected,
+        http=http,
+        timeout=timeout,
+        stable_samples=1,
+    )
+
+
+def _wait_live_world_stable_match(
+    overlay_key: str,
+    expected: dict[str, Any],
+    *,
+    http: str,
+    timeout: float = 8.0,
+    stable_samples: int = 3,
+    interval: float = 0.3,
+) -> dict[str, Any]:
+    """Require consecutive get-live-world samples matching expected P."""
     deadline = time.time() + timeout
     last: dict[str, Any] = {}
     last_xf: Any = None
+    streak = 0
     while time.time() < deadline:
         try:
             live = _result(
@@ -757,22 +1001,29 @@ def _wait_live_world_match(
                 "has_xf": live_xf is not None,
             }
             if live.get("ok") and live_xf and _transforms_match(live_xf, expected):
-                return {
-                    "ok": True,
-                    "last": last,
-                    "xfTransform": live_xf,
-                    "expected": expected,
-                    "actual": live_xf,
-                }
+                streak += 1
+                if streak >= stable_samples:
+                    return {
+                        "ok": True,
+                        "last": last,
+                        "xfTransform": live_xf,
+                        "expected": expected,
+                        "actual": live_xf,
+                        "stable_samples": streak,
+                    }
+            else:
+                streak = 0
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             last = {"error": str(e)}
-        time.sleep(0.25)
+            streak = 0
+        time.sleep(interval)
     return {
         "ok": False,
         "last": last,
         "expected": expected,
         "actual": last_xf,
-        "error": last.get("error") or "timeout waiting for get-live-world match",
+        "stable_samples": streak,
+        "error": last.get("error") or "timeout waiting for stable get-live-world match",
     }
 
 

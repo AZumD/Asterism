@@ -121,6 +121,7 @@ def test_queue_fifo_and_reject() -> None:
         "get-live-world",
         "inspect-undocked-render",
         "inspect-undocked-instance",
+        "inspect-world-lifecycle",
         "inspect-just-floated",
         "clear-just-floated",
     ):

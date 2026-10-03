@@ -23,3 +23,4 @@
 [2026-10-03] Baclaude: World restore uses weak mount readiness + direct-restore init from nullish xfTransform; find-live-uo stays strict; verify via get-live-world. See spatial/restore.py, patches/asterism_shell.js.
 [2026-10-03] Baclaude: clear-just-floated before hide for exact World P restore — suppresses Valve local (0,+0.06,-0.06) post-float nudge; post-hide get-live-world must still match P.
 [2026-10-03] Baclaude: Reversed float strategy — clear-just-floated before hide triggers MobX nudge. Auto path: phase1 direct P → hide → wait justFloated false → phase2 direct P → final_verify. inspect-just-floated added.
+[2026-10-03] Baclaude: Exact World restore: post-hide geometry settle via inspect-world-lifecycle; intentionally clear stale justFloated after settle; post-float settle; phase2 direct; consecutive-sample final_verify.
