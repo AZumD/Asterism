@@ -187,8 +187,12 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "restore-via-hand"',
         'msg.cmd === "get-live-world"',
         'msg.cmd === "find-live-uo"',
+        'msg.cmd === "inspect-undocked-render"',
+        'msg.cmd === "force-dashboard-render"',
         "function directRestore",
         "function restoreViaHand",
+        "function inspectUndockedRender",
+        "function forceDashboardRender",
         "findLiveUndockedOverlayForFrame",
         "react-fiber-setState+map",
         "JSON-safe Frame resolve",
@@ -222,11 +226,20 @@ def test_dashmgr_rejects_non_asterism_new_cmds() -> None:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     mod.dashmgr_reset_for_tests()
-    for cmd in ("direct-restore", "restore-via-hand", "get-live-world"):
+    for cmd in (
+        "direct-restore",
+        "restore-via-hand",
+        "get-live-world",
+        "inspect-undocked-render",
+    ):
         rej = mod.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False
-        ok = mod.dashmgr_enqueue(cmd, overlay_key="asterism.desktop.app.2", transform=SAMPLE_P)
+        ok = mod.dashmgr_enqueue(
+            cmd, overlay_key="asterism.desktop.app.2", transform=SAMPLE_P
+        )
         assert ok["ok"] is True
+    force = mod.dashmgr_enqueue("force-dashboard-render")
+    assert force["ok"] is True
     print("OK non-asterism rejection")
 
 

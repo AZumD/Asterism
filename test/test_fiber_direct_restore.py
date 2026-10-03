@@ -105,7 +105,11 @@ def test_shell_fiber_direct_restore_markers() -> None:
         "isUndockedLikeInstance",
         "FIBER_WALK_MAX",
         'msg.cmd === "find-live-uo"',
+        'msg.cmd === "inspect-undocked-render"',
+        'msg.cmd === "force-dashboard-render"',
         "inspectRenderUndockedSafe",
+        "inspectUndockedRender",
+        "forceDashboardRender",
         "dockLocation must be World for direct restore",
         "function restoreViaHand",
     ):

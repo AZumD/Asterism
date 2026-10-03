@@ -43,6 +43,7 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `test/test_dashmgr_queue.py` | [_VERIFY_DASHMGR_QUEUE.md](_VERIFY_DASHMGR_QUEUE.md) |
 | `test/test_spatial_persistence.py` | [_VERIFY_SPATIAL_PERSISTENCE.md](_VERIFY_SPATIAL_PERSISTENCE.md) |
 | `test/test_fiber_direct_restore.py` | [_VERIFY_FIBER_DIRECT_RESTORE.md](_VERIFY_FIBER_DIRECT_RESTORE.md) |
+| `test/test_undocked_render_diag.py` | [_VERIFY_UNDOCKED_RENDER_DIAG.md](_VERIFY_UNDOCKED_RENDER_DIAG.md) |
 | `test/test_spatial_lifecycle.py` | [_VERIFY_SPATIAL_LIFECYCLE.md](_VERIFY_SPATIAL_LIFECYCLE.md) |
 | `test/_deploy_shell_ws_live.sh` | [_DEPLOY_SHELL_WS_LIVE.md](_DEPLOY_SHELL_WS_LIVE.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |

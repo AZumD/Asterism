@@ -119,10 +119,13 @@ def test_queue_fifo_and_reject() -> None:
         "direct-restore",
         "restore-via-hand",
         "get-live-world",
+        "inspect-undocked-render",
     ):
         rej = ad.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False
         assert "asterism.desktop" in rej["error"]
+    force = ad.dashmgr_enqueue("force-dashboard-render")
+    assert force["ok"] is True
     print("OK fifo+reject")
 
 

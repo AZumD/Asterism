@@ -257,7 +257,155 @@
       mentionsCreateElement:
         src.indexOf("createElement") >= 0 || src.indexOf("jsx") >= 0,
       mentionsFrame: src.indexOf("frame") >= 0,
+      knownSafeShape: renderUndockedSourceIsKnownSafe(src),
     };
+  }
+
+  /**
+   * Only invoke renderUndockedLocalFrameTransforms when source matches the
+   * known safe shape:
+   *   frames_local_undocked.map(... createElement(..., {frame: ...}))
+   */
+  function renderUndockedSourceIsKnownSafe(src) {
+    if (!src || typeof src !== "string") return false;
+    return (
+      src.indexOf("frames_local_undocked") >= 0 &&
+      src.indexOf(".map") >= 0 &&
+      src.indexOf("createElement") >= 0 &&
+      src.indexOf("frame") >= 0
+    );
+  }
+
+  function elementFrameDiag(el) {
+    // Inert React element description only — never return the element itself.
+    try {
+      var props = el && el.props;
+      var frame = props && props.frame;
+      if (!frame) return null;
+      var keys = [];
+      try {
+        keys = (frame.associatedSummonOverlayKeys || []).slice();
+      } catch (_) {}
+      var summon = null;
+      try {
+        summon = frame.activePage && frame.activePage.summonOverlayKey;
+      } catch (_) {}
+      return {
+        frameID: frame.frameID != null ? String(frame.frameID) : null,
+        summonOverlayKey: summon,
+        associatedSummonOverlayKeys: keys,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function inspectUndockedRender(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var dash = window.Dashboard;
+    var fn = dash && dash.renderUndockedLocalFrameTransforms;
+    if (typeof fn !== "function") {
+      return {
+        ok: false,
+        error: "renderUndockedLocalFrameTransforms missing",
+        count: 0,
+        frames: [],
+        targetFrameID: null,
+        targetPresent: false,
+      };
+    }
+    var src = "";
+    try {
+      src = Function.prototype.toString.call(fn);
+    } catch (_) {}
+    if (!renderUndockedSourceIsKnownSafe(src)) {
+      return {
+        ok: false,
+        error: "renderUndockedLocalFrameTransforms source shape not recognized; refuse invoke",
+        sourcePreview: src.slice(0, 240),
+        count: 0,
+        frames: [],
+        targetFrameID: null,
+        targetPresent: false,
+      };
+    }
+
+    var resolved = resolveFrames(overlayKey);
+    var target = resolved.frames && resolved.frames[0];
+    var targetFrameID =
+      target && target.frameID != null ? String(target.frameID) : null;
+
+    var elements;
+    try {
+      elements = fn.call(dash);
+    } catch (e) {
+      return {
+        ok: false,
+        error: "renderUndockedLocalFrameTransforms threw: " + String(e),
+        count: 0,
+        frames: [],
+        targetFrameID: targetFrameID,
+        targetPresent: false,
+      };
+    }
+    if (!Array.isArray(elements)) {
+      return {
+        ok: false,
+        error: "renderUndockedLocalFrameTransforms did not return an array",
+        returnType: elements === null ? "null" : typeof elements,
+        count: 0,
+        frames: [],
+        targetFrameID: targetFrameID,
+        targetPresent: false,
+      };
+    }
+
+    var frames = [];
+    var targetPresent = false;
+    for (var i = 0; i < elements.length; i++) {
+      var snap = elementFrameDiag(elements[i]);
+      if (!snap) continue;
+      frames.push(snap);
+      if (
+        targetFrameID != null &&
+        snap.frameID != null &&
+        String(snap.frameID) === String(targetFrameID)
+      ) {
+        targetPresent = true;
+      }
+    }
+    return {
+      ok: true,
+      path: "renderUndockedLocalFrameTransforms",
+      overlay_key: overlayKey,
+      count: frames.length,
+      frames: frames,
+      targetFrameID: targetFrameID,
+      targetPresent: targetPresent,
+      note: "inert element props only; Case A if targetPresent&&!fiber, Case B if !targetPresent",
+    };
+  }
+
+  function forceDashboardRender() {
+    var dash = window.Dashboard;
+    if (!dash || typeof dash.forceUpdate !== "function") {
+      return {
+        ok: false,
+        error: "Dashboard.forceUpdate unavailable",
+      };
+    }
+    try {
+      dash.forceUpdate();
+      return {
+        ok: true,
+        path: "Dashboard.forceUpdate",
+        note: "diagnostic only; not wired into automatic persistence",
+      };
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
   }
 
   function findLiveDiag(overlayKey) {
@@ -835,6 +983,10 @@
         result = getLiveWorld(msg.overlay_key);
       else if (msg.cmd === "find-live-uo")
         result = findLiveDiag(msg.overlay_key);
+      else if (msg.cmd === "inspect-undocked-render")
+        result = inspectUndockedRender(msg.overlay_key);
+      else if (msg.cmd === "force-dashboard-render")
+        result = forceDashboardRender();
       else result = { ok: false, error: "unknown cmd" };
     } catch (e) {
       result = { ok: false, error: String(e) };
@@ -956,6 +1108,8 @@
           restoreViaHand: restoreViaHand,
           getLiveWorld: getLiveWorld,
           findLiveUndocked: findLiveDiag,
+          inspectUndockedRender: inspectUndockedRender,
+          forceDashboardRender: forceDashboardRender,
           list: listAsterism,
           connectWs: connectWs,
         };

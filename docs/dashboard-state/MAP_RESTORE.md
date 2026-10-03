@@ -91,9 +91,25 @@ Broken chunk bridge v2 (`83a3bcbf…`) caused a giant black rectangle **on load*
 CLI:
 
 - `asterism-dashmgr find-live-uo <overlay-key>`
+- `asterism-dashmgr inspect-undocked-render <overlay-key>` (Case A vs B: is Frame in `frames_local_undocked`?)
+- `asterism-dashmgr force-dashboard-render` (diagnostic `Dashboard.forceUpdate` only)
 - `asterism-dashmgr direct-restore <overlay-key> <transform.json>` (fiber first)
 - `asterism-dashmgr get-live-world <overlay-key>` (after ~1s; setState is async)
 - `asterism-dashmgr restore-via-hand …` (proven diagnostic fallback)
+
+Broken World after fresh SteamVR restart (`dockLocation==World`, no fiber UO):
+
+```
+inspect-undocked-render app.2
+find-live-uo app.2
+force-dashboard-render
+# sleep 1
+find-live-uo app.2
+get-live-world app.2
+```
+
+Case A: `targetPresent=true`, fiber appears after `forceUpdate` → React invalidation.  
+Case B: `targetPresent=false` → Frame Manager bookkeeping; do not chase re-render hacks.
 
 Contingency Valve patch (Asterism-only register):  
 `scripts/stage-steamvr-dashmgr-bridge-v2.1.sh` — stage only if fiber fails live.

@@ -16,3 +16,17 @@ visited set. Match structural signature:
 - `state.xfTransform` present
 
 Never serialize React instances over the wire — diagnostics only.
+
+## Case A / Case B diagnostics
+
+When `dockLocationName == World` but fiber has no matching `UndockedOverlay`:
+
+| Command | Role |
+| --- | --- |
+| `inspect-undocked-render <key>` | Call `renderUndockedLocalFrameTransforms` only if source is known-safe; report whether the Frame is in `frames_local_undocked` (`targetPresent`) |
+| `force-dashboard-render` | `Dashboard.forceUpdate()` once (diagnostic; not auto-persistence) |
+| `find-live-uo <key>` | Fiber walk — was a live UO mounted? |
+
+Interpretation: `targetPresent=true` + fiber absent → Case A (React invalidation). `targetPresent=false` → Case B (Frame Manager bookkeeping; do not chase re-render hacks).
+
+Covered by `test/test_undocked_render_diag.py`.

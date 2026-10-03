@@ -12,6 +12,8 @@
 #   asterism-dashmgr restore-via-hand asterism.desktop.app.2 /path/to/transform.json
 #   asterism-dashmgr get-live-world asterism.desktop.app.2
 #   asterism-dashmgr find-live-uo asterism.desktop.app.2
+#   asterism-dashmgr inspect-undocked-render asterism.desktop.app.2
+#   asterism-dashmgr force-dashboard-render
 #   asterism-dashmgr save-world display-1
 #   asterism-dashmgr restore-display display-1 [--hand-fallback]
 set -euo pipefail
@@ -115,6 +117,13 @@ PY
   find-live-uo)
     key=${1:?overlay key}
     req "$(python3 -c "import json; print(json.dumps({'cmd':'find-live-uo','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  inspect-undocked-render)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'inspect-undocked-render','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  force-dashboard-render)
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'force-dashboard-render','wait':10}))")"
     ;;
   set-presentation)
     key=${1:?overlay key}
