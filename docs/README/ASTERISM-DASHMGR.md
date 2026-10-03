@@ -22,6 +22,7 @@ asterism-dashmgr
 
 ```
 asterism-dashmgr probe
+asterism-dashmgr probe-taskbar
 asterism-dashmgr list
 asterism-dashmgr map
 asterism-dashmgr capture asterism.desktop.app.2
@@ -41,6 +42,7 @@ asterism-dashmgr save-world display-1
 asterism-dashmgr restore-display display-1 [--hand-fallback]
 ```
 
+- `probe-taskbar` (**temporary**, read-only) dumps SystemUI→GamepadUI dashboard-bar tab publish order / Asterism display identity. See [_PROBE_TASKBAR.md](_PROBE_TASKBAR.md).
 - `direct-restore` uses **weak** mounted fiber identity + `setState({xfTransform:P})` (may initialize from null). Requires World docking.
 - `find-live-uo` **strict** fiber match (requires non-null `xfTransform`) — diagnostic only; not used for World readiness.
 - `inspect-world-lifecycle` read-only geometry + float flags + weak mount/xf (auto-restore settle).

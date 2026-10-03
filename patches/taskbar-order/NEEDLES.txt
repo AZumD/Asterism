@@ -1,0 +1,16 @@
+# Exact needles for Asterism-specific dashboard-bar tab publish reorder.
+# Layered on known-safe dashmgr bridge v1 chunk (input SHA below).
+
+INPUT_SHA=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
+OUTPUT_SHA=047c1d4ef8110849da024ed34948370dc92f572bc06e4c1de3f5b81fc4bccb8e
+EXPECTED_BUILD=1790822802
+
+# Stock Dt (bridged chunk, before taskbar-order patch) — must appear once.
+OLD_DT=Dt=[e=>{var t;return 14==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return 33==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return null!=(null===(t=e.icon())||void 0===t?void 0:t.overlay())},e=>{var t;return 15==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return null!=(null===(t=e.icon())||void 0===t?void 0:t.hwnd())}];
+
+# Patched Dt: Steam, Asterism overlay (asterism.desktop.app.*), appid 33,
+# other overlay (excludes Asterism), Display 15, hwnd.
+NEW_DT=Dt=[e=>{var t;return 14==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return null!=(null===(t=e.icon())||void 0===t?void 0:t.overlay())&&0===String(t.overlay()).indexOf("asterism.desktop.app.")},e=>{var t;return 33==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return null!=(null===(t=e.icon())||void 0===t?void 0:t.overlay())&&0!==String(t.overlay()).indexOf("asterism.desktop.app.")},e=>{var t;return 15==(null===(t=e.icon())||void 0===t?void 0:t.enum())},e=>{var t;return null!=(null===(t=e.icon())||void 0===t?void 0:t.hwnd())}];
+
+# Bridge must remain (v1).
+BRIDGE_V1=window.__ASTERISM_STEAMVR||(window.__ASTERISM_STEAMVR={version:1,yWq:i.yWq,getFramesForSummonKey:function(e){return M.JJ.GetFramesWithAssociatedSummonKeys(e)||[]}})

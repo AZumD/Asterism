@@ -1475,6 +1475,212 @@
     return out;
   }
 
+  /**
+   * TEMPORARY read-only diagnostic: how SystemUI publishes dashboard-bar tabs
+   * to GamepadUI (valve.steam.gamepadui.bar). Does not reorder anything.
+   */
+  function iconSnap(icon) {
+    if (!icon || typeof icon !== "object") return null;
+    var out = {};
+    try {
+      if (icon.enum != null) out.enum = Number(icon.enum);
+    } catch (_) {}
+    try {
+      if (icon.overlay != null) out.overlay = String(icon.overlay);
+    } catch (_) {}
+    try {
+      if (icon.appid != null) out.appid = Number(icon.appid);
+    } catch (_) {}
+    try {
+      if (icon.hwnd != null) out.hwnd = String(icon.hwnd);
+    } catch (_) {}
+    return out;
+  }
+
+  function isAsterismAppOverlayKey(k) {
+    return typeof k === "string" && k.indexOf("asterism.desktop.app.") === 0;
+  }
+
+  function sortBucketForIcon(icon) {
+    // PoC Dt[] in chunk~8012d0c89.js (taskbar-order layered on bridge v1):
+    // 0 Steam(14), 1 asterism.desktop.app.*, 2 appid(33), 3 other overlay,
+    // 4 Display(15), 5 hwnd, 6 other
+    if (!icon) return 6;
+    if (icon.enum === 14) return 0;
+    if (isAsterismAppOverlayKey(icon.overlay)) return 1;
+    if (icon.enum === 33) return 2;
+    if (icon.overlay) return 3;
+    if (icon.enum === 15) return 4;
+    if (icon.hwnd != null && icon.hwnd !== "") return 5;
+    return 6;
+  }
+
+  function kindForTab(icon, keys, summon) {
+    var overlayKey = null;
+    if (icon && icon.overlay) overlayKey = icon.overlay;
+    else if (summon) overlayKey = summon;
+    else if (keys && keys.length) overlayKey = keys[0];
+    if (icon && icon.enum === 14) return "steam";
+    if (
+      isAsterismAppOverlayKey(overlayKey) ||
+      (keys || []).some(function (k) {
+        return isAsterismAppOverlayKey(String(k));
+      })
+    )
+      return "asterism-display";
+    if (icon && icon.enum === 33) return "appid";
+    if (icon && icon.overlay) return "overlay";
+    if (icon && icon.enum === 15) return "display-enum";
+    if (icon && icon.hwnd != null) return "hwnd";
+    if (icon && icon.appid != null) return "appid";
+    return "other";
+  }
+
+  function frameTabChild(frame, index) {
+    var keys = [];
+    var summon = null;
+    var frameID = null;
+    var title = null;
+    var tab = null;
+    var icon = null;
+    var visibleBar = null;
+    var visibleMenu = null;
+    var tabId = null;
+    try {
+      keys = (frame.associatedSummonOverlayKeys || []).slice();
+    } catch (_) {}
+    try {
+      summon = frame.activePage && frame.activePage.summonOverlayKey;
+    } catch (_) {}
+    try {
+      frameID = frame.frameID != null ? String(frame.frameID) : null;
+    } catch (_) {}
+    try {
+      title = frame.title != null ? String(frame.title) : null;
+    } catch (_) {}
+    try {
+      icon = iconSnap(frame.icon);
+    } catch (_) {}
+    try {
+      tab = frame.tab;
+      if (tab) {
+        try {
+          visibleBar = !!tab.visibleInDashboardBar;
+        } catch (_) {}
+        try {
+          visibleMenu = !!tab.visibleInDashboardHamburgerMenu;
+        } catch (_) {}
+        try {
+          var proto = tab.proto;
+          if (proto) {
+            if (proto.tab_id != null) tabId = Number(proto.tab_id);
+            if (!icon) icon = iconSnap(proto.icon);
+            if (proto.display_name != null) title = String(proto.display_name);
+            if (proto.visible_in_dashboard_bar != null)
+              visibleBar = !!proto.visible_in_dashboard_bar;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    var kind = kindForTab(icon, keys, summon);
+    return {
+      index: index,
+      kind: kind,
+      frameID: frameID,
+      tabId: tabId,
+      title: title,
+      summonOverlayKey: summon,
+      associatedSummonOverlayKeys: keys,
+      overlayKey:
+        (icon && icon.overlay) ||
+        summon ||
+        (keys && keys[0]) ||
+        null,
+      icon: icon,
+      visibleInDashboardBar: visibleBar,
+      visibleInDashboardHamburgerMenu: visibleMenu,
+      publishSortBucket: sortBucketForIcon(icon),
+      gamepaduiSurfaceGuess:
+        icon && icon.enum === 14 ? "left_bookend_steam" : "main_tabs",
+    };
+  }
+
+  function probeTaskbar() {
+    var report = {
+      ts: new Date().toISOString(),
+      temporary: true,
+      taskbarFound: false,
+      note:
+        "Live SystemUI tab publish view. Visible Frame taskbar is valve.steam.gamepadui.bar (Steam steamui), not LegacyDashboardBar.",
+      dashboardBarOverlayKey: null,
+      isVRGamepadUI: null,
+      showLegacyDashboardBar: null,
+      children: [],
+      asterismDisplays: [],
+      publishSortBuckets:
+        "0=Steam(14),1=asterism.desktop.app.*,2=appid(33),3=otherOverlay,4=Display(15),5=hwnd,6=other",
+    };
+    try {
+      var dash = window.Dashboard;
+      if (dash) {
+        // Best-effort flags if Valve left them reachable
+        try {
+          report.hasUpdateVRGamepadUIPathProperties =
+            typeof dash.updateVRGamepadUIPathProperties === "function";
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    var legacy = window.LegacyDashboardStore;
+    var tabs = null;
+    try {
+      tabs = legacy && legacy.legacyFilteredOverlayTabs;
+    } catch (_) {}
+    if (tabs && typeof tabs.length === "number") {
+      report.taskbarFound = true;
+      report.source = "LegacyDashboardStore.legacyFilteredOverlayTabs";
+      for (var i = 0; i < tabs.length; i++) {
+        report.children.push(frameTabChild(tabs[i], i));
+      }
+    } else {
+      report.source = "asterism_keys_fallback";
+      report.taskbarFound = true;
+      var bridge = window.__ASTERISM_STEAMVR;
+      var idx = 0;
+      for (var n = 0; n < 8; n++) {
+        var key = "asterism.desktop.app." + n;
+        var rf = resolveFrames(key);
+        var frames = (rf && rf.frames) || [];
+        for (var j = 0; j < frames.length; j++) {
+          report.children.push(frameTabChild(frames[j], idx++));
+        }
+      }
+    }
+
+    report.asterismDisplays = report.children.filter(function (c) {
+      return c.kind === "asterism-display";
+    });
+    report.childrenSortedAsPublished = report.children
+      .slice()
+      .sort(function (a, b) {
+        if (a.publishSortBucket !== b.publishSortBucket)
+          return a.publishSortBucket - b.publishSortBucket;
+        var ta = a.tabId != null ? a.tabId : 0;
+        var tb = b.tabId != null ? b.tabId : 0;
+        return ta - tb;
+      });
+    report.publishedOrder = report.childrenSortedAsPublished.map(function (c) {
+      return {
+        kind: c.kind,
+        overlay: c.overlayKey,
+        tabId: c.tabId,
+        title: c.title,
+        publishSortBucket: c.publishSortBucket,
+      };
+    });
+    return report;
+  }
+
   function runDashboardProbe() {
     var report = {
       ts: new Date().toISOString(),
@@ -1576,6 +1782,8 @@
     try {
       if (msg.cmd === "list") result = { ok: true, frames: listAsterism() };
       else if (msg.cmd === "probe") result = { ok: true, probe: runDashboardProbe() };
+      else if (msg.cmd === "probe-taskbar")
+        result = { ok: true, taskbar: probeTaskbar() };
       else if (msg.cmd === "capture") result = captureOverlay(msg.overlay_key);
       else if (msg.cmd === "seed-world")
         result = seedWorld(msg.overlay_key, msg.transform);
@@ -1720,6 +1928,7 @@
         clearInterval(t);
         window.__ASTERISM_SHELL = {
           probe: runDashboardProbe,
+          probeTaskbar: probeTaskbar,
           capture: captureOverlay,
           seedWorld: seedWorld,
           seedPresentationTransform: seedPresentationTransform,

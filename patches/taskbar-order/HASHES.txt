@@ -1,0 +1,5 @@
+# chunk~8012d0c89.js — Asterism taskbar-order PoC layered on dashmgr bridge v1
+build=1790822802
+input_bridged_sha256=272c1e40f75bafe28a7108485295681ffdac2a322a6a10f3e2d35278d596dfd9
+output_taskbar_order_sha256=047c1d4ef8110849da024ed34948370dc92f572bc06e4c1de3f5b81fc4bccb8e
+note=Does not modify dashmgr bridge API (version:1 getFramesForSummonKey). Reorders Dt publish buckets only.

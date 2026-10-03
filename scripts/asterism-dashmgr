@@ -2,6 +2,7 @@
 # Queue Dashboard Manager commands for asterism_shell.js via loopback HTTP.
 # Usage:
 #   asterism-dashmgr probe
+#   asterism-dashmgr probe-taskbar
 #   asterism-dashmgr list
 #   asterism-dashmgr map
 #   asterism-dashmgr capture asterism.desktop.app.2
@@ -55,6 +56,10 @@ PY
 case "$cmd" in
   probe)
     req '{"cmd":"probe","wait":10}'
+    ;;
+  probe-taskbar)
+    # TEMPORARY read-only: SystemUI→GamepadUI dashboard-bar tab publish order
+    req '{"cmd":"probe-taskbar","wait":10}'
     ;;
   list)
     req '{"cmd":"list","wait":10}'

@@ -27,6 +27,7 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `scripts/asterism-dashboard-inspect` | [ASTERISM-DASHBOARD-INSPECT.md](ASTERISM-DASHBOARD-INSPECT.md) |
 | `scripts/asterism-dashmgr` | [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md) |
 | `scripts/patch-steamvr-dashmgr-bridge.sh` | [PATCH-STEAMVR-DASHMGR-BRIDGE.md](PATCH-STEAMVR-DASHMGR-BRIDGE.md) |
+| `scripts/patch-steamvr-taskbar-order.sh` | [PATCH-STEAMVR-TASKBAR-ORDER.md](PATCH-STEAMVR-TASKBAR-ORDER.md) (PoC Dt reorder) |
 | `scripts/stage-steamvr-dashmgr-bridge-v2.sh` | [STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md](STAGE-STEAMVR-DASHMGR-BRIDGE-V2.md) (broken; do not apply) |
 | `scripts/stage-steamvr-dashmgr-bridge-v2.1.sh` | [STAGE-STEAMVR-DASHMGR-BRIDGE-V2.1.md](STAGE-STEAMVR-DASHMGR-BRIDGE-V2.1.md) (contingency) |
 | `spatial/react_fiber.py` | [REACT_FIBER.md](REACT_FIBER.md) |
@@ -46,6 +47,9 @@ Asterism tools and docs for a SteamVR-native Linux desktop on Steam Frame.
 | `test/test_undocked_render_diag.py` | [_VERIFY_UNDOCKED_RENDER_DIAG.md](_VERIFY_UNDOCKED_RENDER_DIAG.md) |
 | `test/test_spatial_lifecycle.py` | [_VERIFY_SPATIAL_LIFECYCLE.md](_VERIFY_SPATIAL_LIFECYCLE.md) |
 | `test/_deploy_shell_ws_live.sh` | [_DEPLOY_SHELL_WS_LIVE.md](_DEPLOY_SHELL_WS_LIVE.md) |
+| `test/_probe_taskbar.sh` | [_PROBE_TASKBAR.md](_PROBE_TASKBAR.md) (temporary taskbar RE) |
+| `test/test_taskbar_order_model.py` | [TEST_TASKBAR_ORDER_MODEL.md](TEST_TASKBAR_ORDER_MODEL.md) |
+| `test/_verify_taskbar_order.sh` | [PATCH-STEAMVR-TASKBAR-ORDER.md](PATCH-STEAMVR-TASKBAR-ORDER.md) |
 | `pointer/driver/` (`asterism_pointer`) | [DRIVER_ASTERISM_POINTER.md](DRIVER_ASTERISM_POINTER.md) (**legacy** fallback) |
 | `test/test_place_wiring.sh` | [_VERIFY_PLACE.md](_VERIFY_PLACE.md) |
 | `scripts/asterism-vrsettings.sh` | [ASTERISM-VRSETTINGS.md](ASTERISM-VRSETTINGS.md) |
