@@ -104,11 +104,19 @@ Cold automatic World restore live finding:
   while `state.xfTransform` is still undefined.
 - Null `xfTransform` ≠ unmounted. Readiness uses `inspect-undocked-instance`;
   `direct-restore` initializes from saved P; `get-live-world` verifies strictly.
+- After restore, `POST /hide` used to apply Valve's one-shot float nudge
+  (local `(0,+0.06,-0.06)` rotated by xf rotation) when
+  `justFloatedFromDashboard && !isActiveDashboardFrame`. Asterism clears the
+  flag via `clear-just-floated` only for exact persisted World P, then
+  re-verifies live P after hide.
 
 ```
-inspect-undocked-instance app.2   # candidateCount>=1, maybe xfTransformNullish
-direct-restore app.2 P.json       # initializes xf when nullish
-get-live-world app.2              # strict; must match P
+inspect-undocked-instance app.2
+direct-restore app.2 P.json
+get-live-world app.2
+clear-just-floated app.2
+# hide
+get-live-world app.2              # must still match P
 ```
 
 Contingency Valve patch (Asterism-only register):  

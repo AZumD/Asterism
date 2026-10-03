@@ -22,7 +22,7 @@ Internal FIFO queue (`collections.deque`). CLI enqueues over HTTP; systemui cons
 Queue helpers declare module state correctly; covered by `test/test_dashmgr_queue.py`.
 
 Supported diagnostic cmds include `inspect-undocked-render`,
-`inspect-undocked-instance`, and `force-dashboard-render`
-(Case A/B World missing-UO triage; not auto-persistence).
+`inspect-undocked-instance`, `clear-just-floated`, and `force-dashboard-render`
+(Case A/B World missing-UO triage + exact World nudge suppress; not generic float).
 
 See [ASTERISM-DASHMGR.md](ASTERISM-DASHMGR.md), [ASTERISM_WS.md](ASTERISM_WS.md), [../dashboard-state/MAP_RESTORE.md](../dashboard-state/MAP_RESTORE.md).

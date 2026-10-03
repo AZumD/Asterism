@@ -77,7 +77,9 @@ set-presentation world
 wait dockLocation==World AND inspect-undocked-instance (weak mount)
 direct-restore(P)                       # if transforms.world exists; may init null xf
 verify get-live-world == P              # strict path
+clear-just-floated                      # suppress Valve post-float nudge
 POST /hide                              # best-effort; never masks primary error
+verify get-live-world == P again        # final hidden-dashboard pose must match P
 ```
 
 A mounted `UndockedOverlay` may exist at cold startup with
@@ -85,6 +87,12 @@ A mounted `UndockedOverlay` may exist at cold startup with
 component is unmounted. Readiness uses weak identity; `find-live-uo` stays
 strict (mounted + non-null xf) for diagnostics only.
 
-Without a saved World transform, materialize only — do not invent a pose.
+Valve applies a one-shot local nudge `(0, +0.06, -0.06)` (rotated by current
+xf rotation) when `justFloatedFromDashboard` is consumed on Dashboard hide.
+Asterism clears that flag **only** when restoring an exact persisted World
+transform P — not for generic World presentation without saved pose.
+
+Without a saved World transform, materialize only — do not invent a pose and
+do not clear the float flag (preserve normal Valve behavior).
 
 No hand/controller fallback on normal startup.

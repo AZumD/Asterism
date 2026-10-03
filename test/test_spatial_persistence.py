@@ -189,15 +189,18 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
         'msg.cmd === "inspect-undocked-instance"',
+        'msg.cmd === "clear-just-floated"',
         'msg.cmd === "force-dashboard-render"',
         "function directRestore",
         "function restoreViaHand",
         "function inspectUndockedRender",
         "function inspectUndockedInstance",
+        "function clearJustFloated",
         "function findMountedUndockedOverlayForFrame",
         "function forceDashboardRender",
         "findLiveUndockedOverlayForFrame",
         "initializedFromNull",
+        "SetJustFloatedFromDashboard",
         "react-fiber-setState+map",
         "JSON-safe Frame resolve",
     ):
@@ -236,6 +239,7 @@ def test_dashmgr_rejects_non_asterism_new_cmds() -> None:
         "get-live-world",
         "inspect-undocked-render",
         "inspect-undocked-instance",
+        "clear-just-floated",
     ):
         rej = mod.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False

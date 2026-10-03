@@ -592,21 +592,68 @@ def _restore_world(
         _cleanup_hide()
         return out
 
-    # 7) Strict verify: poll get-live-world until xf matches saved P
+    # 7) Strict verify live P before hide
     verify = _wait_live_world_match(overlay_key, world_xf, http=http)
     out["verify"] = {
         "ok": verify.get("ok"),
         "error": verify.get("error"),
         "last": verify.get("last"),
+        "expected": verify.get("expected"),
+        "actual": verify.get("actual"),
     }
-    out["ok"] = bool(verify.get("ok"))
+    if not verify.get("ok"):
+        out["ok"] = False
+        out["error"] = verify.get("error") or "live xf mismatch after direct-restore"
+        _cleanup_hide()
+        return out
+
+    # 8) Suppress Valve post-float nudge before hide (exact World restore only)
+    try:
+        cleared = _result(
+            dashmgr_request(
+                "clear-just-floated",
+                http=http,
+                overlay_key=overlay_key,
+                wait=10.0,
+            )
+        )
+        out["clear_just_floated"] = {
+            "ok": cleared.get("ok"),
+            "before": cleared.get("before"),
+            "after": cleared.get("after"),
+            "frameID": cleared.get("frameID"),
+            "error": cleared.get("error"),
+        }
+        if not cleared.get("ok"):
+            out["ok"] = False
+            out["error"] = cleared.get("error") or "clear-just-floated failed"
+            _cleanup_hide()
+            return out
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        out["ok"] = False
+        out["error"] = str(e)
+        out["clear_just_floated"] = {"ok": False, "error": str(e)}
+        _cleanup_hide()
+        return out
+
+    # 9) Hide, then strict-verify P again (nudge would show up here if flag uncleared)
+    _cleanup_hide()
+    verify_after = _wait_live_world_match(overlay_key, world_xf, http=http)
+    out["verify_after_hide"] = {
+        "ok": verify_after.get("ok"),
+        "error": verify_after.get("error"),
+        "last": verify_after.get("last"),
+        "expected": verify_after.get("expected"),
+        "actual": verify_after.get("actual"),
+    }
+    out["ok"] = bool(verify_after.get("ok"))
     if out["ok"]:
         out["path"] = "world-materialization+direct-restore"
     else:
-        out["error"] = verify.get("error") or "live xf mismatch after direct-restore"
-
-    # 8) Hide dashboard after successful or failed attempt (best-effort)
-    _cleanup_hide()
+        out["error"] = (
+            verify_after.get("error")
+            or "live xf mismatch after hide (Valve float nudge?)"
+        )
     return out
 
 
@@ -620,6 +667,7 @@ def _wait_live_world_match(
     """Bounded poll of strict get-live-world until xf matches expected P."""
     deadline = time.time() + timeout
     last: dict[str, Any] = {}
+    last_xf: Any = None
     while time.time() < deadline:
         try:
             live = _result(
@@ -631,6 +679,7 @@ def _wait_live_world_match(
                 )
             )
             live_xf = live.get("xfTransform")
+            last_xf = live_xf
             last = {
                 "ok": live.get("ok"),
                 "path": live.get("path"),
@@ -638,13 +687,21 @@ def _wait_live_world_match(
                 "has_xf": live_xf is not None,
             }
             if live.get("ok") and live_xf and _transforms_match(live_xf, expected):
-                return {"ok": True, "last": last, "xfTransform": live_xf}
+                return {
+                    "ok": True,
+                    "last": last,
+                    "xfTransform": live_xf,
+                    "expected": expected,
+                    "actual": live_xf,
+                }
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             last = {"error": str(e)}
         time.sleep(0.25)
     return {
         "ok": False,
         "last": last,
+        "expected": expected,
+        "actual": last_xf,
         "error": last.get("error") or "timeout waiting for get-live-world match",
     }
 

@@ -35,7 +35,8 @@ Never serialize React instances over the wire — diagnostics only.
 | `inspect-undocked-instance <key>` | Weak fiber walk (primary+alternate); readiness signal |
 | `find-live-uo <key>` | Strict diagnostic (mounted + non-null xf) |
 | `direct-restore` | Weak mount + `map[World]=P` + `setState`; reports `initializedFromNull` |
-| `get-live-world` | Strict live pose verify after restore |
+| `clear-just-floated` | `SetJustFloatedFromDashboard(false)` only — exact World restore before hide |
+| `get-live-world` | Strict live pose verify (pre- and post-hide) |
 
 Live finding: a mounted UndockedOverlay may exist at cold startup with
 `state.xfTransform` undefined. Null xfTransform is not evidence of unmounted.

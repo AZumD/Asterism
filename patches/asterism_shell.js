@@ -1149,6 +1149,78 @@
     };
   }
 
+  /**
+   * Clear Valve's one-shot justFloatedFromDashboard flag so POST /hide does not
+   * apply the local (0,+0.06,-0.06) nudge when Asterism restored an exact World pose.
+   */
+  function clearJustFloated(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var resolved = resolveFrames(overlayKey);
+    var frames = resolved.frames || [];
+    if (frames.length !== 1) {
+      return {
+        ok: false,
+        error:
+          frames.length === 0
+            ? "no frame for overlay"
+            : "expected exactly one Frame, got " + frames.length,
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var frame = frames[0];
+    if (!frame || !frame.docking) {
+      return {
+        ok: false,
+        error: "frame.docking missing",
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    if (typeof frame.docking.SetJustFloatedFromDashboard !== "function") {
+      return {
+        ok: false,
+        error: "SetJustFloatedFromDashboard unavailable",
+        frameID: frame.frameID != null ? String(frame.frameID) : null,
+      };
+    }
+    var before = null;
+    try {
+      if ("justFloatedFromDashboard" in frame.docking) {
+        before = !!frame.docking.justFloatedFromDashboard;
+      }
+    } catch (_) {
+      before = null;
+    }
+    try {
+      frame.docking.SetJustFloatedFromDashboard(false);
+    } catch (err) {
+      return {
+        ok: false,
+        error: String(err),
+        frameID: frame.frameID != null ? String(frame.frameID) : null,
+        before: before,
+      };
+    }
+    var after = null;
+    try {
+      if ("justFloatedFromDashboard" in frame.docking) {
+        after = !!frame.docking.justFloatedFromDashboard;
+      }
+    } catch (_) {
+      after = null;
+    }
+    return {
+      ok: true,
+      path: "SetJustFloatedFromDashboard(false)",
+      frameID: frame.frameID != null ? String(frame.frameID) : null,
+      before: before,
+      after: after,
+      note:
+        "suppresses Valve post-float nudge (local 0,+0.06,-0.06) only for exact World restore",
+    };
+  }
+
   function getLiveWorld(overlayKey) {
     if (!looksAsterismKey(overlayKey)) {
       return { ok: false, error: "overlay key must start with asterism.desktop" };
@@ -1367,6 +1439,8 @@
         result = inspectUndockedRender(msg.overlay_key);
       else if (msg.cmd === "inspect-undocked-instance")
         result = inspectUndockedInstance(msg.overlay_key);
+      else if (msg.cmd === "clear-just-floated")
+        result = clearJustFloated(msg.overlay_key);
       else if (msg.cmd === "force-dashboard-render")
         result = forceDashboardRender();
       else result = { ok: false, error: "unknown cmd" };
@@ -1492,6 +1566,7 @@
           findLiveUndocked: findLiveDiag,
           inspectUndockedRender: inspectUndockedRender,
           inspectUndockedInstance: inspectUndockedInstance,
+          clearJustFloated: clearJustFloated,
           forceDashboardRender: forceDashboardRender,
           list: listAsterism,
           connectWs: connectWs,
