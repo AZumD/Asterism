@@ -551,28 +551,20 @@ def _restore_world(
         _cleanup_hide()
         return out
 
-    # 6) Direct restore only when Asterism has a saved World transform P.
-    #    Without P: do not invent a pose; materialization alone is enough.
+    # 6) Without saved World transform P: materialize + hide only.
+    #    Do not invent a pose, clear the float flag, or final-restore.
     if not world_xf:
         out["ok"] = True
         out["note"] = (
             "no saved world transform; materialization only "
-            "(weak mount may still have nullish xfTransform)"
+            "(preserve normal Valve float lifecycle)"
         )
         _cleanup_hide()
+        out["hide"] = mat.get("hide")
         return out
 
-    try:
-        direct = _result(
-            dashmgr_request(
-                "direct-restore",
-                http=http,
-                overlay_key=overlay_key,
-                transform=world_xf,
-                wait=15.0,
-            )
-        )
-        out["direct"] = {
+    def _direct_snap(direct: dict[str, Any]) -> dict[str, Any]:
+        return {
             "ok": direct.get("ok"),
             "path": direct.get("path"),
             "error": direct.get("error"),
@@ -581,80 +573,158 @@ def _restore_world(
             "previousXfTransformNullish": direct.get("previousXfTransformNullish"),
             "initializedFromNull": direct.get("initializedFromNull"),
         }
-        if not direct.get("ok"):
-            out["ok"] = False
-            out["error"] = direct.get("error") or "direct-restore failed"
-            _cleanup_hide()
-            return out
-    except (urllib.error.URLError, TimeoutError, OSError) as e:
-        out["ok"] = False
-        out["error"] = str(e)
-        _cleanup_hide()
-        return out
 
-    # 7) Strict verify live P before hide
-    verify = _wait_live_world_match(overlay_key, world_xf, http=http)
-    out["verify"] = {
-        "ok": verify.get("ok"),
-        "error": verify.get("error"),
-        "last": verify.get("last"),
-        "expected": verify.get("expected"),
-        "actual": verify.get("actual"),
-    }
-    if not verify.get("ok"):
-        out["ok"] = False
-        out["error"] = verify.get("error") or "live xf mismatch after direct-restore"
-        _cleanup_hide()
-        return out
+    def _verify_snap(verify: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "ok": verify.get("ok"),
+            "error": verify.get("error"),
+            "last": verify.get("last"),
+            "expected": verify.get("expected"),
+            "actual": verify.get("actual"),
+        }
 
-    # 8) Suppress Valve post-float nudge before hide (exact World restore only)
+    # Phase 1: initialize / establish pose while Dashboard is shown
+    # (cold mount may have xfTransform==null; Valve nudge skips null xf)
     try:
-        cleared = _result(
+        pre_direct = _result(
             dashmgr_request(
-                "clear-just-floated",
+                "direct-restore",
                 http=http,
                 overlay_key=overlay_key,
-                wait=10.0,
+                transform=world_xf,
+                wait=15.0,
             )
         )
-        out["clear_just_floated"] = {
-            "ok": cleared.get("ok"),
-            "before": cleared.get("before"),
-            "after": cleared.get("after"),
-            "frameID": cleared.get("frameID"),
-            "error": cleared.get("error"),
-        }
-        if not cleared.get("ok"):
+        out["pre_hide_restore"] = _direct_snap(pre_direct)
+        # Compat alias used by older diagnostics
+        out["direct"] = out["pre_hide_restore"]
+        if not pre_direct.get("ok"):
             out["ok"] = False
-            out["error"] = cleared.get("error") or "clear-just-floated failed"
+            out["error"] = pre_direct.get("error") or "pre-hide direct-restore failed"
             _cleanup_hide()
+            out["hide"] = mat.get("hide")
             return out
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         out["ok"] = False
         out["error"] = str(e)
-        out["clear_just_floated"] = {"ok": False, "error": str(e)}
+        out["pre_hide_restore"] = {"ok": False, "error": str(e)}
         _cleanup_hide()
+        out["hide"] = mat.get("hide")
         return out
 
-    # 9) Hide, then strict-verify P again (nudge would show up here if flag uncleared)
+    pre_verify = _wait_live_world_match(overlay_key, world_xf, http=http)
+    out["pre_hide_verify"] = _verify_snap(pre_verify)
+    out["verify"] = out["pre_hide_verify"]
+    if not pre_verify.get("ok"):
+        out["ok"] = False
+        out["error"] = pre_verify.get("error") or "pre-hide live xf mismatch"
+        _cleanup_hide()
+        out["hide"] = mat.get("hide")
+        return out
+
+    # Let Valve complete normal floating lifecycle (do NOT clear-just-floated:
+    # flipping true→false itself triggers the MobX nudge reaction).
     _cleanup_hide()
-    verify_after = _wait_live_world_match(overlay_key, world_xf, http=http)
-    out["verify_after_hide"] = {
-        "ok": verify_after.get("ok"),
-        "error": verify_after.get("error"),
-        "last": verify_after.get("last"),
-        "expected": verify_after.get("expected"),
-        "actual": verify_after.get("actual"),
+    out["hide"] = mat.get("hide")
+
+    float_wait = _wait_float_lifecycle_done(overlay_key, http=http)
+    out["float_lifecycle_wait"] = {
+        "ok": float_wait.get("ok"),
+        "error": float_wait.get("error"),
+        "last": float_wait.get("last"),
+        "already_false": float_wait.get("already_false"),
     }
-    out["ok"] = bool(verify_after.get("ok"))
+    if not float_wait.get("ok"):
+        out["ok"] = False
+        out["error"] = float_wait.get("error") or "float lifecycle timeout"
+        return out
+
+    # Phase 2: final persisted pose wins after nudge has been consumed
+    try:
+        final_direct = _result(
+            dashmgr_request(
+                "direct-restore",
+                http=http,
+                overlay_key=overlay_key,
+                transform=world_xf,
+                wait=15.0,
+            )
+        )
+        out["final_restore"] = _direct_snap(final_direct)
+        if not final_direct.get("ok"):
+            out["ok"] = False
+            out["error"] = final_direct.get("error") or "final direct-restore failed"
+            return out
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        out["ok"] = False
+        out["error"] = str(e)
+        out["final_restore"] = {"ok": False, "error": str(e)}
+        return out
+
+    final_verify = _wait_live_world_match(overlay_key, world_xf, http=http)
+    out["final_verify"] = _verify_snap(final_verify)
+    out["ok"] = bool(final_verify.get("ok"))
     if out["ok"]:
         out["path"] = "world-materialization+direct-restore"
     else:
         out["error"] = (
-            verify_after.get("error")
-            or "live xf mismatch after hide (Valve float nudge?)"
+            final_verify.get("error")
+            or "final post-hide live xf mismatch"
         )
     return out
+
+
+def _wait_float_lifecycle_done(
+    overlay_key: str,
+    *,
+    http: str,
+    timeout: float = 10.0,
+) -> dict[str, Any]:
+    """Wait until justFloatedFromDashboard is false (Valve consumed the one-shot)."""
+    deadline = time.time() + timeout
+    last: dict[str, Any] = {}
+    first = True
+    while time.time() < deadline:
+        try:
+            insp = _result(
+                dashmgr_request(
+                    "inspect-just-floated",
+                    http=http,
+                    overlay_key=overlay_key,
+                    wait=8.0,
+                )
+            )
+            flag = insp.get("justFloatedFromDashboard")
+            last = {
+                "ok": insp.get("ok"),
+                "frameID": insp.get("frameID"),
+                "dockLocationName": insp.get("dockLocationName"),
+                "justFloatedFromDashboard": flag,
+                "isActiveDashboardFrame": insp.get("isActiveDashboardFrame"),
+                "error": insp.get("error"),
+            }
+            if insp.get("ok") and flag is False:
+                return {
+                    "ok": True,
+                    "already_false": first,
+                    "last": last,
+                }
+            if insp.get("ok") and flag is None:
+                # Property unavailable — cannot wait; fail cleanly
+                return {
+                    "ok": False,
+                    "error": "justFloatedFromDashboard unavailable",
+                    "last": last,
+                }
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = {"error": str(e)}
+        first = False
+        time.sleep(0.25)
+    return {
+        "ok": False,
+        "error": "timeout waiting for justFloatedFromDashboard==false",
+        "last": last,
+    }
 
 
 def _wait_live_world_match(

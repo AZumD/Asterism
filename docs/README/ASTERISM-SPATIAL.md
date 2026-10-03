@@ -72,27 +72,33 @@ is not enough.
 ```
 seed-presentation-transform(world, P)   # if transforms.world exists
 set-presentation dashboard
-POST /show                              # visibility/materialization only
+POST /show
 set-presentation world
-wait dockLocation==World AND inspect-undocked-instance (weak mount)
-direct-restore(P)                       # if transforms.world exists; may init null xf
-verify get-live-world == P              # strict path
-clear-just-floated                      # suppress Valve post-float nudge
-POST /hide                              # best-effort; never masks primary error
-verify get-live-world == P again        # final hidden-dashboard pose must match P
+wait World + inspect-undocked-instance (weak mount)
+
+# Phase 1 — initialize pose (xf may be null at cold mount)
+direct-restore(P)
+verify get-live-world == P              # intermediate
+
+POST /hide                              # Valve runs normal float lifecycle / nudge
+wait inspect-just-floated: justFloatedFromDashboard == false
+
+# Phase 2 — persisted pose wins after nudge
+direct-restore(P)
+verify get-live-world == P              # SUCCESS criterion
 ```
 
 A mounted `UndockedOverlay` may exist at cold startup with
 `state.xfTransform` undefined. Null `xfTransform` is **not** evidence the
-component is unmounted. Readiness uses weak identity; `find-live-uo` stays
-strict (mounted + non-null xf) for diagnostics only.
+component is unmounted. Valve's nudge reaction no-ops while xf is null, so
+phase-1 direct-restore is required before hide.
 
-Valve applies a one-shot local nudge `(0, +0.06, -0.06)` (rotated by current
-xf rotation) when `justFloatedFromDashboard` is consumed on Dashboard hide.
-Asterism clears that flag **only** when restoring an exact persisted World
-transform P — not for generic World presentation without saved pose.
+Live-proven: clearing `justFloatedFromDashboard` before hide is **wrong** —
+MobX reacts to the true→false transition and still applies the local
+`(0,+0.06,-0.06)` nudge. Automatic restore never calls `clear-just-floated`;
+it lets Valve consume the flag via hide, then re-applies P.
 
-Without a saved World transform, materialize only — do not invent a pose and
-do not clear the float flag (preserve normal Valve behavior).
+Without a saved World transform: Dashboard→show→World→wait weak mount→hide.
+No invent pose, no clear flag, no final direct-restore.
 
 No hand/controller fallback on normal startup.

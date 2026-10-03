@@ -22,3 +22,4 @@
 [2026-10-03] Baclaude: Added inspect-undocked-instance weak fiber diagnostic (frameID match without xfTransform; primary+alternate dedup). find-live-uo/direct-restore/persistence unchanged.
 [2026-10-03] Baclaude: World restore uses weak mount readiness + direct-restore init from nullish xfTransform; find-live-uo stays strict; verify via get-live-world. See spatial/restore.py, patches/asterism_shell.js.
 [2026-10-03] Baclaude: clear-just-floated before hide for exact World P restore — suppresses Valve local (0,+0.06,-0.06) post-float nudge; post-hide get-live-world must still match P.
+[2026-10-03] Baclaude: Reversed float strategy — clear-just-floated before hide triggers MobX nudge. Auto path: phase1 direct P → hide → wait justFloated false → phase2 direct P → final_verify. inspect-just-floated added.

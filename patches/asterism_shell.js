@@ -1149,9 +1149,57 @@
     };
   }
 
+  /** Read-only float-lifecycle flag inspect (no mutation). */
+  function inspectJustFloated(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var resolved = resolveFrames(overlayKey);
+    var frames = resolved.frames || [];
+    if (frames.length !== 1) {
+      return {
+        ok: false,
+        error:
+          frames.length === 0
+            ? "no frame for overlay"
+            : "expected exactly one Frame, got " + frames.length,
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var frame = frames[0];
+    if (!frame || !frame.docking) {
+      return {
+        ok: false,
+        error: "frame.docking missing",
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var justFloated = null;
+    var isActive = null;
+    try {
+      if ("justFloatedFromDashboard" in frame.docking) {
+        justFloated = !!frame.docking.justFloatedFromDashboard;
+      }
+    } catch (_) {}
+    try {
+      if ("isActiveDashboardFrame" in frame) {
+        isActive = !!frame.isActiveDashboardFrame;
+      }
+    } catch (_) {}
+    return {
+      ok: true,
+      path: "inspect-just-floated",
+      frameID: frame.frameID != null ? String(frame.frameID) : null,
+      dockLocationName: ywqName(frame.docking.dockLocation),
+      justFloatedFromDashboard: justFloated,
+      isActiveDashboardFrame: isActive,
+    };
+  }
+
   /**
-   * Clear Valve's one-shot justFloatedFromDashboard flag so POST /hide does not
-   * apply the local (0,+0.06,-0.06) nudge when Asterism restored an exact World pose.
+   * Diagnostic only: clear justFloatedFromDashboard.
+   * NOT used by automatic World restore — flipping true→false itself
+   * triggers Valve's MobX nudge reaction.
    */
   function clearJustFloated(overlayKey) {
     if (!looksAsterismKey(overlayKey)) {
@@ -1217,7 +1265,7 @@
       before: before,
       after: after,
       note:
-        "suppresses Valve post-float nudge (local 0,+0.06,-0.06) only for exact World restore",
+        "diagnostic only — auto World restore lets Valve consume the flag via hide, then re-applies P",
     };
   }
 
@@ -1439,6 +1487,8 @@
         result = inspectUndockedRender(msg.overlay_key);
       else if (msg.cmd === "inspect-undocked-instance")
         result = inspectUndockedInstance(msg.overlay_key);
+      else if (msg.cmd === "inspect-just-floated")
+        result = inspectJustFloated(msg.overlay_key);
       else if (msg.cmd === "clear-just-floated")
         result = clearJustFloated(msg.overlay_key);
       else if (msg.cmd === "force-dashboard-render")
@@ -1566,6 +1616,7 @@
           findLiveUndocked: findLiveDiag,
           inspectUndockedRender: inspectUndockedRender,
           inspectUndockedInstance: inspectUndockedInstance,
+          inspectJustFloated: inspectJustFloated,
           clearJustFloated: clearJustFloated,
           forceDashboardRender: forceDashboardRender,
           list: listAsterism,

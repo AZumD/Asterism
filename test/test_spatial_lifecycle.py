@@ -167,24 +167,21 @@ def test_world_restore_presentation_first() -> None:
     calls: list[str] = []
     modes: list[str] = []
     http_actions: list[str] = []
+    direct_n = {"n": 0}
 
     def fake_req(cmd, **kw):
         calls.append(cmd)
-        if cmd == "seed-presentation-transform":
-            assert kw.get("presentation") == "world"
-            return {"ok": True, "result": {"ok": True}}
         if cmd == "set-presentation":
             modes.append(kw.get("mode"))
             return {"ok": True, "result": {"ok": True, "path": "SetDockLocation"}}
+        if cmd == "seed-presentation-transform":
+            assert kw.get("presentation") == "world"
+            return {"ok": True, "result": {"ok": True}}
         if cmd == "capture":
-            # After world set, report World
             name = "World" if "world" in modes else "Dashboard"
             return {
                 "ok": True,
-                "result": {
-                    "ok": True,
-                    "capture": {"dockLocationName": name},
-                },
+                "result": {"ok": True, "capture": {"dockLocationName": name}},
             }
         if cmd == "inspect-undocked-instance":
             return {
@@ -203,14 +200,15 @@ def test_world_restore_presentation_first() -> None:
                 },
             }
         if cmd == "direct-restore":
+            direct_n["n"] += 1
             return {
                 "ok": True,
                 "result": {
                     "ok": True,
                     "path": "react-fiber-setState+map",
                     "instanceFound": True,
-                    "previousXfTransformNullish": True,
-                    "initializedFromNull": True,
+                    "previousXfTransformNullish": direct_n["n"] == 1,
+                    "initializedFromNull": direct_n["n"] == 1,
                 },
             }
         if cmd == "get-live-world":
@@ -218,16 +216,19 @@ def test_world_restore_presentation_first() -> None:
                 "ok": True,
                 "result": {"ok": True, "path": "react-fiber", "xfTransform": P},
             }
-        if cmd == "clear-just-floated":
+        if cmd == "inspect-just-floated":
             return {
                 "ok": True,
                 "result": {
                     "ok": True,
                     "frameID": "42",
-                    "before": True,
-                    "after": False,
+                    "dockLocationName": "World",
+                    "justFloatedFromDashboard": False,
+                    "isActiveDashboardFrame": False,
                 },
             }
+        if cmd == "clear-just-floated":
+            raise AssertionError("automatic restore must not call clear-just-floated")
         raise AssertionError(cmd)
 
     def fake_http(http, action):
@@ -252,45 +253,54 @@ def test_world_restore_presentation_first() -> None:
                         )
         assert r["ok"], r
         assert "restore-via-hand" not in calls
+        assert "clear-just-floated" not in calls
         assert "find-live-uo" not in calls
         assert calls[0] == "seed-presentation-transform"
         assert modes == ["dashboard", "world"]
         assert http_actions == ["show", "hide"]
-        # Order: direct → verify P → clear flag → hide → verify P
-        i_direct = calls.index("direct-restore")
-        i_verify1 = calls.index("get-live-world")
-        i_clear = calls.index("clear-just-floated")
-        i_verify2 = len(calls) - 1 - calls[::-1].index("get-live-world")
-        assert i_direct < i_verify1 < i_clear < i_verify2
-        assert http_actions.index("hide") == 1
-        # clear must precede hide (hide is http; clear is dashmgr before hide)
-        assert i_clear < i_verify2
-        assert calls.count("get-live-world") >= 2
-        assert r["materialization"]["live_ready"] is True
-        assert r["direct"]["initializedFromNull"] is True
-        assert r["verify"]["ok"] is True
-        assert r["clear_just_floated"]["ok"] is True
-        assert r["verify_after_hide"]["ok"] is True
+        # Order: weak mount → direct → verify → hide → wait flag → direct → verify
+        i_mount = calls.index("inspect-undocked-instance")
+        directs = [i for i, c in enumerate(calls) if c == "direct-restore"]
+        verifies = [i for i, c in enumerate(calls) if c == "get-live-world"]
+        i_float = calls.index("inspect-just-floated")
+        assert len(directs) == 2
+        assert len(verifies) >= 2
+        assert i_mount < directs[0] < verifies[0] < i_float < directs[1] < verifies[-1]
+        assert r["pre_hide_restore"]["initializedFromNull"] is True
+        assert r["pre_hide_verify"]["ok"] is True
+        assert r["float_lifecycle_wait"]["ok"] is True
+        assert r["final_restore"]["ok"] is True
+        assert r["final_verify"]["ok"] is True
         assert r["path"] == "world-materialization+direct-restore"
     print("OK world restore order")
 
 
-def test_world_clear_just_floated_failure_still_hides() -> None:
+def test_world_post_hide_nudge_then_final_restore() -> None:
+    """Hide lifecycle nudges away from P; final direct-restore restores exact P."""
     http_actions: list[str] = []
     calls: list[str] = []
+    direct_n = {"n": 0}
+    get_n = {"n": 0}
+    nudged = {
+        "translation": {
+            "x": P["translation"]["x"] - 0.0086293009,
+            "y": P["translation"]["y"] + 0.0805547654,
+            "z": P["translation"]["z"] + 0.0252282612,
+        },
+        "rotation": dict(P["rotation"]),
+        "scale": dict(P["scale"]),
+    }
+    float_polls = {"n": 0}
 
     def fake_req(cmd, **kw):
         calls.append(cmd)
-        if cmd in ("seed-presentation-transform", "set-presentation", "capture"):
-            if cmd == "capture":
-                return {
-                    "ok": True,
-                    "result": {
-                        "ok": True,
-                        "capture": {"dockLocationName": "World"},
-                    },
-                }
+        if cmd in ("seed-presentation-transform", "set-presentation"):
             return {"ok": True, "result": {"ok": True}}
+        if cmd == "capture":
+            return {
+                "ok": True,
+                "result": {"ok": True, "capture": {"dockLocationName": "World"}},
+            }
         if cmd == "inspect-undocked-instance":
             return {
                 "ok": True,
@@ -298,21 +308,44 @@ def test_world_clear_just_floated_failure_still_hides() -> None:
                     "ok": True,
                     "candidateCount": 1,
                     "targetFrameID": "42",
-                    "candidates": [{"frameID": "42", "xfTransformNullish": False}],
+                    "candidates": [{"frameID": "42", "xfTransformNullish": True}],
                 },
             }
         if cmd == "direct-restore":
-            return {"ok": True, "result": {"ok": True, "instanceFound": True}}
-        if cmd == "get-live-world":
+            direct_n["n"] += 1
             return {
                 "ok": True,
-                "result": {"ok": True, "xfTransform": P},
+                "result": {
+                    "ok": True,
+                    "instanceFound": True,
+                    "initializedFromNull": direct_n["n"] == 1,
+                    "previousXfTransformNullish": direct_n["n"] == 1,
+                },
+            }
+        if cmd == "get-live-world":
+            get_n["n"] += 1
+            # After hide+before final restore, Valve nudge would show nudged pose;
+            # our sequence verifies P before hide and after final restore only.
+            # Simulate: first verify=P; if somehow mid-lifecycle get is called=P still
+            # Final verify after 2nd direct = P.
+            xf = P
+            return {"ok": True, "result": {"ok": True, "xfTransform": xf}}
+        if cmd == "inspect-just-floated":
+            float_polls["n"] += 1
+            # First poll still true (lifecycle in progress), then false
+            flag = float_polls["n"] == 1
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "frameID": "42",
+                    "dockLocationName": "World",
+                    "justFloatedFromDashboard": flag,
+                    "isActiveDashboardFrame": False,
+                },
             }
         if cmd == "clear-just-floated":
-            return {
-                "ok": True,
-                "result": {"ok": False, "error": "SetJustFloatedFromDashboard unavailable"},
-            }
+            raise AssertionError("automatic restore must not call clear-just-floated")
         raise AssertionError(cmd)
 
     with tempfile.TemporaryDirectory() as td:
@@ -325,8 +358,9 @@ def test_world_clear_just_floated_failure_still_hides() -> None:
                 side_effect=lambda _h, a: http_actions.append(a) or {"ok": True},
             ):
                 with mock.patch.object(restore_mod, "time") as tmod:
-                    tmod.sleep = lambda *_a, **_k: None
-                    tmod.time = time.time
+                    clock = {"t": 0.0}
+                    tmod.time = lambda: clock["t"]
+                    tmod.sleep = lambda d: clock.__setitem__("t", clock["t"] + float(d))
                     with mock.patch.object(
                         restore_mod,
                         "overlay_key_for_display",
@@ -335,27 +369,28 @@ def test_world_clear_just_floated_failure_still_hides() -> None:
                         r = restore_mod.restore_display(
                             "display-1", path=path, allow_hand_fallback=False
                         )
-        assert r["ok"] is False
-        assert "clear-just-floated" in (r.get("error") or "") or "SetJustFloated" in (
-            r.get("error") or ""
-        )
+        assert r["ok"] is True
+        assert direct_n["n"] == 2
+        assert float_polls["n"] >= 2
+        assert r["pre_hide_restore"]["initializedFromNull"] is True
+        assert r["final_restore"]["initializedFromNull"] is False
+        assert r["final_verify"]["ok"] is True
+        assert "clear-just-floated" not in calls
         assert "hide" in http_actions
-        assert "verify_after_hide" not in r  # failed before post-hide verify
-        assert calls.index("clear-just-floated") > calls.index("get-live-world")
-    print("OK clear-just-floated failure still hides")
+        # Prove nudge delta exists as a known Valve offset (documentation lock)
+        assert abs(nudged["translation"]["y"] - P["translation"]["y"] - 0.0805547654) < 1e-9
+    print("OK post-hide nudge then final restore")
 
 
-def test_world_post_hide_pose_mismatch_fails() -> None:
+def test_world_final_verify_determines_success() -> None:
+    """Pre-hide ok but final verify mismatch → restore fails."""
     http_actions: list[str] = []
-    live_n = {"n": 0}
-    nudged = {
-        "translation": {
-            "x": P["translation"]["x"] - 0.0086293009,
-            "y": P["translation"]["y"] + 0.0805547654,
-            "z": P["translation"]["z"] + 0.0252282612,
-        },
-        "rotation": dict(P["rotation"]),
-        "scale": dict(P["scale"]),
+    direct_n = {"n": 0}
+    get_n = {"n": 0}
+    bad = {
+        "translation": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "rotation": {"w": 1.0, "x": 0.0, "y": 0.0, "z": 0.0},
+        "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
     }
 
     def fake_req(cmd, **kw):
@@ -377,13 +412,23 @@ def test_world_post_hide_pose_mismatch_fails() -> None:
                 },
             }
         if cmd == "direct-restore":
+            direct_n["n"] += 1
             return {"ok": True, "result": {"ok": True, "instanceFound": True}}
         if cmd == "get-live-world":
-            live_n["n"] += 1
-            xf = P if live_n["n"] == 1 else nudged
+            get_n["n"] += 1
+            xf = P if get_n["n"] == 1 else bad
             return {"ok": True, "result": {"ok": True, "xfTransform": xf}}
+        if cmd == "inspect-just-floated":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "justFloatedFromDashboard": False,
+                    "isActiveDashboardFrame": False,
+                },
+            }
         if cmd == "clear-just-floated":
-            return {"ok": True, "result": {"ok": True, "before": True, "after": False}}
+            raise AssertionError("automatic restore must not call clear-just-floated")
         raise AssertionError(cmd)
 
     with tempfile.TemporaryDirectory() as td:
@@ -408,13 +453,80 @@ def test_world_post_hide_pose_mismatch_fails() -> None:
                             "display-1", path=path, allow_hand_fallback=False
                         )
         assert r["ok"] is False
-        assert r["verify"]["ok"] is True
-        assert r["clear_just_floated"]["ok"] is True
-        assert r["verify_after_hide"]["ok"] is False
-        assert r["verify_after_hide"].get("expected") is not None
-        assert r["verify_after_hide"].get("actual") is not None
+        assert r["pre_hide_verify"]["ok"] is True
+        assert r["final_verify"]["ok"] is False
+        assert r["final_verify"].get("expected") is not None
         assert "hide" in http_actions
-    print("OK post-hide pose mismatch fails")
+    print("OK final verify determines success")
+
+
+def test_world_float_lifecycle_timeout_fails() -> None:
+    http_actions: list[str] = []
+
+    def fake_req(cmd, **kw):
+        if cmd in ("seed-presentation-transform", "set-presentation"):
+            return {"ok": True, "result": {"ok": True}}
+        if cmd == "capture":
+            return {
+                "ok": True,
+                "result": {"ok": True, "capture": {"dockLocationName": "World"}},
+            }
+        if cmd == "inspect-undocked-instance":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "candidateCount": 1,
+                    "targetFrameID": "42",
+                    "candidates": [{"frameID": "42"}],
+                },
+            }
+        if cmd == "direct-restore":
+            return {"ok": True, "result": {"ok": True, "instanceFound": True}}
+        if cmd == "get-live-world":
+            return {"ok": True, "result": {"ok": True, "xfTransform": P}}
+        if cmd == "inspect-just-floated":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "justFloatedFromDashboard": True,
+                    "isActiveDashboardFrame": False,
+                },
+            }
+        if cmd == "clear-just-floated":
+            raise AssertionError("automatic restore must not call clear-just-floated")
+        raise AssertionError(cmd)
+
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "s.json"
+        set_display_world("display-1", P, path=path)
+        with mock.patch.object(restore_mod, "dashmgr_request", side_effect=fake_req):
+            with mock.patch.object(
+                restore_mod,
+                "_http_action",
+                side_effect=lambda _h, a: http_actions.append(a) or {"ok": True},
+            ):
+                with mock.patch.object(restore_mod, "time") as tmod:
+                    clock = {"t": 0.0}
+                    tmod.time = lambda: clock["t"]
+                    tmod.sleep = lambda d: clock.__setitem__("t", clock["t"] + float(d))
+                    with mock.patch.object(
+                        restore_mod,
+                        "overlay_key_for_display",
+                        return_value="asterism.desktop.app.2",
+                    ):
+                        r = restore_mod.restore_display(
+                            "display-1", path=path, allow_hand_fallback=False
+                        )
+        assert r["ok"] is False
+        assert "lifecycle" in (r.get("error") or "").lower() or "justFloated" in (
+            r.get("error") or ""
+        )
+        assert r["float_lifecycle_wait"]["ok"] is False
+        assert "final_restore" not in r
+        assert "hide" in http_actions
+    print("OK float lifecycle timeout fails")
 
 
 def test_world_hide_on_failure_and_no_mask() -> None:
@@ -500,6 +612,8 @@ def test_world_no_transform_still_materializes() -> None:
             raise AssertionError("should not get-live-world without transform")
         if cmd == "clear-just-floated":
             raise AssertionError("should not clear-just-floated without saved World transform")
+        if cmd == "inspect-just-floated":
+            raise AssertionError("should not wait float lifecycle without saved World transform")
         raise AssertionError(cmd)
 
     with tempfile.TemporaryDirectory() as td:
@@ -834,8 +948,9 @@ def main() -> int:
     test_snapshot_prefers_live_world()
     test_snapshot_failure_preserves_peers()
     test_world_restore_presentation_first()
-    test_world_clear_just_floated_failure_still_hides()
-    test_world_post_hide_pose_mismatch_fails()
+    test_world_post_hide_nudge_then_final_restore()
+    test_world_final_verify_determines_success()
+    test_world_float_lifecycle_timeout_fails()
     test_world_hide_on_failure_and_no_mask()
     test_world_no_transform_still_materializes()
     test_dashboard_theater_restore()

@@ -100,23 +100,21 @@ CLI:
 
 Cold automatic World restore live finding:
 
-- Frame may be World + in `frames_local_undocked` + weak-mounted `UndockedOverlay`
-  while `state.xfTransform` is still undefined.
-- Null `xfTransform` ≠ unmounted. Readiness uses `inspect-undocked-instance`;
-  `direct-restore` initializes from saved P; `get-live-world` verifies strictly.
-- After restore, `POST /hide` used to apply Valve's one-shot float nudge
-  (local `(0,+0.06,-0.06)` rotated by xf rotation) when
-  `justFloatedFromDashboard && !isActiveDashboardFrame`. Asterism clears the
-  flag via `clear-just-floated` only for exact persisted World P, then
-  re-verifies live P after hide.
+- Frame may be World + weak-mounted `UndockedOverlay` with `xfTransform` undefined.
+- Null xf ≠ unmounted. Phase-1 `direct-restore` initializes P before hide so
+  Valve's nudge reaction can run (`if (null == xfTransform) return`).
+- `clear-just-floated` before hide is **wrong**: MobX reacts to true→false and
+  still nudges. Auto-restore lets hide consume the flag, waits
+  `justFloatedFromDashboard==false`, then phase-2 `direct-restore` + strict verify.
 
 ```
 inspect-undocked-instance app.2
-direct-restore app.2 P.json
+direct-restore app.2 P.json       # phase 1
 get-live-world app.2
-clear-just-floated app.2
 # hide
-get-live-world app.2              # must still match P
+inspect-just-floated app.2        # wait until false
+direct-restore app.2 P.json       # phase 2 — final pose
+get-live-world app.2              # SUCCESS criterion
 ```
 
 Contingency Valve patch (Asterism-only register):  

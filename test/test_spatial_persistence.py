@@ -189,12 +189,14 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
         'msg.cmd === "inspect-undocked-instance"',
+        'msg.cmd === "inspect-just-floated"',
         'msg.cmd === "clear-just-floated"',
         'msg.cmd === "force-dashboard-render"',
         "function directRestore",
         "function restoreViaHand",
         "function inspectUndockedRender",
         "function inspectUndockedInstance",
+        "function inspectJustFloated",
         "function clearJustFloated",
         "function findMountedUndockedOverlayForFrame",
         "function forceDashboardRender",
@@ -239,6 +241,7 @@ def test_dashmgr_rejects_non_asterism_new_cmds() -> None:
         "get-live-world",
         "inspect-undocked-render",
         "inspect-undocked-instance",
+        "inspect-just-floated",
         "clear-just-floated",
     ):
         rej = mod.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
