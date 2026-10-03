@@ -120,6 +120,7 @@ def test_queue_fifo_and_reject() -> None:
         "restore-via-hand",
         "get-live-world",
         "inspect-undocked-render",
+        "inspect-undocked-instance",
     ):
         rej = ad.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False

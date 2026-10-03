@@ -13,7 +13,12 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from spatial.react_fiber import find_live_undocked_overlay, is_undocked_like  # noqa: E402
+from spatial.react_fiber import (  # noqa: E402
+    find_live_undocked_overlay,
+    inspect_undocked_instance,
+    is_undocked_like,
+    is_weak_undocked_instance,
+)
 from spatial.spatial_state import validate_transform  # noqa: E402
 
 SAMPLE_P = {
@@ -22,12 +27,18 @@ SAMPLE_P = {
     "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
 }
 
+_XF_UNSET = object()
 
-def _inst(frame_id, xf=None):
+
+def _inst(frame_id, xf=_XF_UNSET):
+    if xf is _XF_UNSET:
+        xf = SAMPLE_P
     return SimpleNamespace(
         setState=lambda *_a, **_k: None,
         props=SimpleNamespace(frame=SimpleNamespace(frameID=frame_id)),
-        state=SimpleNamespace(xfTransform=xf or SAMPLE_P),
+        state=SimpleNamespace(xfTransform=xf),
+        setInitialTransformForLocation=lambda *_a, **_k: None,
+        componentDidMount=lambda *_a, **_k: None,
     )
 
 
@@ -94,7 +105,49 @@ def test_signature_requires_xf_and_setstate() -> None:
         state=SimpleNamespace(),
     )
     assert not is_undocked_like(bad2, 1)
+    # Weak match accepts mounted instance with nullish xfTransform
+    weak = _inst(1, xf=None)
+    assert is_weak_undocked_instance(weak, 1)
+    assert not is_undocked_like(weak, 1)
     print("OK signature")
+
+
+def test_inspect_undocked_instance_weak_and_alternate() -> None:
+    # Mounted with xfTransform still undefined/null — find-live would miss
+    mounted = _inst(42, xf=None)
+    leaf = _fiber(state_node=mounted)
+    root = _fiber(child=leaf)
+    # Same stateNode on alternate tree — must dedup
+    alt = _fiber(child=_fiber(state_node=mounted))
+    rep = inspect_undocked_instance(root, 42, alternate_root=alt)
+    assert rep["ok"] is True
+    assert rep["candidateCount"] == 1
+    assert rep["alternatePresent"] is True
+    assert rep["primaryVisited"] >= 1
+    assert rep["alternateVisited"] >= 1
+    c0 = rep["candidates"][0]
+    assert c0["tree"] == "primary"
+    assert c0["frameID"] == "42"
+    assert c0["xfTransformNullish"] is True
+    assert c0["hasOwnXfTransform"] is True
+    assert "xfTransform" not in c0
+    assert c0["hasSetInitialTransformForLocation"] is True
+    assert c0["hasComponentDidMount"] is True
+    assert json.dumps(rep)  # JSON-safe
+
+    # Distinct instance only on alternate
+    other = _inst(7, xf=None)
+    alt_only = _fiber(state_node=other)
+    rep2 = inspect_undocked_instance(
+        _fiber(), 7, alternate_root=_fiber(child=alt_only)
+    )
+    assert rep2["candidateCount"] == 1
+    assert rep2["candidates"][0]["tree"] == "alternate"
+
+    # Strong find still requires non-null xf
+    miss = find_live_undocked_overlay(root, 42)
+    assert miss["diag"]["found"] is False
+    print("OK weak instance + alternate dedup")
 
 
 def test_shell_fiber_direct_restore_markers() -> None:
@@ -106,9 +159,12 @@ def test_shell_fiber_direct_restore_markers() -> None:
         "FIBER_WALK_MAX",
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
+        'msg.cmd === "inspect-undocked-instance"',
         'msg.cmd === "force-dashboard-render"',
         "inspectRenderUndockedSafe",
         "inspectUndockedRender",
+        "inspectUndockedInstance",
+        "isWeakUndockedInstance",
         "forceDashboardRender",
         "dockLocation must be World for direct restore",
         "function restoreViaHand",
@@ -229,6 +285,7 @@ def main() -> int:
     test_fiber_find_and_bounds()
     test_fiber_cycle_and_malformed()
     test_signature_requires_xf_and_setstate()
+    test_inspect_undocked_instance_weak_and_alternate()
     test_shell_fiber_direct_restore_markers()
     test_transform_validation()
     test_v2_patch_static_analysis()

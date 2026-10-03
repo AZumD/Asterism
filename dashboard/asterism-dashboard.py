@@ -385,6 +385,7 @@ _SUPPORTED_CMDS = (
     "get-live-world",
     "find-live-uo",
     "inspect-undocked-render",
+    "inspect-undocked-instance",
     "force-dashboard-render",
 )
 
@@ -424,6 +425,7 @@ def dashmgr_enqueue(cmd: str, **fields: Any) -> dict:
         "get-live-world",
         "find-live-uo",
         "inspect-undocked-render",
+        "inspect-undocked-instance",
     ):
         if not _asterism_overlay_key_ok(fields.get("overlay_key")):
             return {"ok": False, "error": "overlay_key must start with asterism.desktop"}

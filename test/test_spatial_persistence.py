@@ -188,10 +188,12 @@ def test_shell_commands_present() -> None:
         'msg.cmd === "get-live-world"',
         'msg.cmd === "find-live-uo"',
         'msg.cmd === "inspect-undocked-render"',
+        'msg.cmd === "inspect-undocked-instance"',
         'msg.cmd === "force-dashboard-render"',
         "function directRestore",
         "function restoreViaHand",
         "function inspectUndockedRender",
+        "function inspectUndockedInstance",
         "function forceDashboardRender",
         "findLiveUndockedOverlayForFrame",
         "react-fiber-setState+map",
@@ -231,6 +233,7 @@ def test_dashmgr_rejects_non_asterism_new_cmds() -> None:
         "restore-via-hand",
         "get-live-world",
         "inspect-undocked-render",
+        "inspect-undocked-instance",
     ):
         rej = mod.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
         assert rej["ok"] is False

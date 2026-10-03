@@ -186,6 +186,207 @@
     return true;
   }
 
+  /** Weak identity: mounted class with matching frameID; xfTransform may be null. */
+  function isWeakUndockedInstance(instance, targetFrameID) {
+    if (!instance || typeof instance !== "object") return false;
+    if (typeof instance.setState !== "function") return false;
+    if (!instance.props || !instance.props.frame) return false;
+    if (instance.props.frame.frameID == null) return false;
+    return String(instance.props.frame.frameID) === String(targetFrameID);
+  }
+
+  function jsonSafePrimitive(v) {
+    var t = typeof v;
+    if (v === null || t === "string" || t === "boolean") return v;
+    if (t === "number") return isFinite(v) ? v : null;
+    return undefined;
+  }
+
+  function weakInstanceCandidateDiag(instance, tree) {
+    // Read-only; never call component methods; never return the instance.
+    var frameID = null;
+    try {
+      frameID =
+        instance.props &&
+        instance.props.frame &&
+        instance.props.frame.frameID != null
+          ? String(instance.props.frame.frameID)
+          : null;
+    } catch (_) {}
+    var constructorName = null;
+    try {
+      constructorName =
+        instance.constructor && instance.constructor.name
+          ? String(instance.constructor.name)
+          : null;
+    } catch (_) {}
+    var statePresent = false;
+    var hasOwnXf = false;
+    var xfNullish = true;
+    var xfOut = undefined;
+    var sParentDevice = undefined;
+    var dragSnapLocation = undefined;
+    try {
+      statePresent = !!instance.state && typeof instance.state === "object";
+      if (statePresent) {
+        try {
+          hasOwnXf = Object.prototype.hasOwnProperty.call(
+            instance.state,
+            "xfTransform"
+          );
+        } catch (_) {
+          hasOwnXf = instance.state.xfTransform !== undefined;
+        }
+        var xf = instance.state.xfTransform;
+        xfNullish = xf == null;
+        if (!xfNullish) {
+          var cloned = cloneTransform(xf);
+          if (cloned) {
+            try {
+              JSON.stringify(cloned);
+              xfOut = cloned;
+            } catch (_) {}
+          }
+        }
+        sParentDevice = jsonSafePrimitive(instance.state.sParentDevice);
+        dragSnapLocation = jsonSafePrimitive(instance.state.dragSnapLocation);
+      }
+    } catch (_) {}
+    var out = {
+      tree: tree,
+      frameID: frameID,
+      constructorName: constructorName,
+      hasSetState: typeof instance.setState === "function",
+      statePresent: statePresent,
+      hasOwnXfTransform: hasOwnXf,
+      xfTransformNullish: xfNullish,
+      sParentDevice: sParentDevice === undefined ? null : sParentDevice,
+      dragSnapLocation:
+        dragSnapLocation === undefined ? null : dragSnapLocation,
+      hasSetInitialTransformForLocation:
+        typeof instance.setInitialTransformForLocation === "function",
+      hasComponentDidMount: typeof instance.componentDidMount === "function",
+    };
+    if (xfOut !== undefined) out.xfTransform = xfOut;
+    return out;
+  }
+
+  /**
+   * Bounded child/sibling walk; collects weak matches. Dedup via seenStateNodes.
+   * Returns {candidates, visited} — never mutates React state.
+   */
+  function walkFiberTreeWeak(root, frameID, treeName, seenStateNodes) {
+    var candidates = [];
+    var stack = root ? [root] : [];
+    var visitedFibers = typeof Set !== "undefined" ? new Set() : null;
+    var count = 0;
+    while (stack.length && count < FIBER_WALK_MAX) {
+      var fiber = stack.pop();
+      if (!fiber || typeof fiber !== "object") continue;
+      if (visitedFibers) {
+        if (visitedFibers.has(fiber)) continue;
+        visitedFibers.add(fiber);
+      }
+      count++;
+      try {
+        var sn = fiber.stateNode;
+        if (isWeakUndockedInstance(sn, frameID)) {
+          if (seenStateNodes) {
+            if (seenStateNodes.has(sn)) {
+              // same instance already reported from the other tree
+            } else {
+              seenStateNodes.add(sn);
+              candidates.push(weakInstanceCandidateDiag(sn, treeName));
+            }
+          } else {
+            candidates.push(weakInstanceCandidateDiag(sn, treeName));
+          }
+        }
+      } catch (_) {}
+      try {
+        if (fiber.child) stack.push(fiber.child);
+        if (fiber.sibling) stack.push(fiber.sibling);
+      } catch (_) {}
+    }
+    return { candidates: candidates, visited: count };
+  }
+
+  /**
+   * Read-only weak instance diagnostic: frameID match without requiring
+   * xfTransform. Walks primary and alternate fiber roots separately.
+   */
+  function inspectUndockedInstance(overlayKey) {
+    if (!looksAsterismKey(overlayKey)) {
+      return { ok: false, error: "overlay key must start with asterism.desktop" };
+    }
+    var resolved = resolveFrames(overlayKey);
+    var frame = resolved.frames && resolved.frames[0];
+    var targetFrameID =
+      frame && frame.frameID != null ? String(frame.frameID) : null;
+    if (!targetFrameID) {
+      return {
+        ok: false,
+        error: "no frame for overlay",
+        targetFrameID: null,
+        candidateCount: 0,
+        primaryVisited: 0,
+        alternatePresent: false,
+        alternateVisited: 0,
+        candidates: [],
+        resolve: resolveFramesReport(overlayKey),
+      };
+    }
+    var dash = window.Dashboard;
+    if (!dash || !dash._reactInternals) {
+      return {
+        ok: false,
+        error: "Dashboard._reactInternals missing",
+        targetFrameID: targetFrameID,
+        candidateCount: 0,
+        primaryVisited: 0,
+        alternatePresent: false,
+        alternateVisited: 0,
+        candidates: [],
+      };
+    }
+    var seen =
+      typeof Set !== "undefined" ? new Set() : null;
+    var primary = walkFiberTreeWeak(
+      dash._reactInternals,
+      targetFrameID,
+      "primary",
+      seen
+    );
+    var altRoot = null;
+    try {
+      altRoot = dash._reactInternals.alternate;
+    } catch (_) {}
+    var alternatePresent = !!(altRoot && typeof altRoot === "object");
+    var alternate = { candidates: [], visited: 0 };
+    if (alternatePresent) {
+      alternate = walkFiberTreeWeak(
+        altRoot,
+        targetFrameID,
+        "alternate",
+        seen
+      );
+    }
+    var candidates = primary.candidates.concat(alternate.candidates);
+    return {
+      ok: true,
+      path: "react-fiber-weak",
+      overlay_key: overlayKey,
+      targetFrameID: targetFrameID,
+      candidateCount: candidates.length,
+      primaryVisited: primary.visited,
+      alternatePresent: alternatePresent,
+      alternateVisited: alternate.visited,
+      candidates: candidates,
+      note:
+        "weak identity (setState+frameID); xfTransform may be null — distinguishes mounted-vs-unmounted for find-live-uo",
+    };
+  }
+
   /**
    * Bounded walk of Dashboard React fiber subtree (child/sibling only).
    * Returns live class instance internally; never serialize instance/fiber.
@@ -1079,6 +1280,8 @@
         result = findLiveDiag(msg.overlay_key);
       else if (msg.cmd === "inspect-undocked-render")
         result = inspectUndockedRender(msg.overlay_key);
+      else if (msg.cmd === "inspect-undocked-instance")
+        result = inspectUndockedInstance(msg.overlay_key);
       else if (msg.cmd === "force-dashboard-render")
         result = forceDashboardRender();
       else result = { ok: false, error: "unknown cmd" };
@@ -1203,6 +1406,7 @@
           getLiveWorld: getLiveWorld,
           findLiveUndocked: findLiveDiag,
           inspectUndockedRender: inspectUndockedRender,
+          inspectUndockedInstance: inspectUndockedInstance,
           forceDashboardRender: forceDashboardRender,
           list: listAsterism,
           connectWs: connectWs,

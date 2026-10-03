@@ -26,9 +26,16 @@ def test_shell_inspect_and_force_markers() -> None:
         "function elementTypeDiag",
         "function elementFrameDiag",
         "function inspectUndockedRender",
+        "function inspectUndockedInstance",
+        "function isWeakUndockedInstance",
         "function forceDashboardRender",
         'msg.cmd === "inspect-undocked-render"',
+        'msg.cmd === "inspect-undocked-instance"',
         'msg.cmd === "force-dashboard-render"',
+        "react-fiber-weak",
+        "alternatePresent",
+        "xfTransformNullish",
+        "hasSetInitialTransformForLocation",
         "frames_local_undocked",
         "renderUndockedLocalFrameTransforms",
         "dash.forceUpdate()",
@@ -70,8 +77,10 @@ def test_shell_inspect_and_force_markers() -> None:
 def test_cli_commands_present() -> None:
     cli = (ROOT / "scripts" / "asterism-dashmgr").read_text(encoding="utf-8")
     assert "inspect-undocked-render)" in cli
+    assert "inspect-undocked-instance)" in cli
     assert "force-dashboard-render)" in cli
     assert "'cmd':'inspect-undocked-render'" in cli.replace(" ", "")
+    assert "'cmd':'inspect-undocked-instance'" in cli.replace(" ", "")
     assert "'cmd':'force-dashboard-render'" in cli.replace(" ", "")
     print("OK CLI cmds")
 
@@ -80,18 +89,15 @@ def test_dashmgr_enqueue_policy() -> None:
     mod = _load_dashboard()
     mod.dashmgr_reset_for_tests()
     assert "inspect-undocked-render" in mod._SUPPORTED_CMDS
+    assert "inspect-undocked-instance" in mod._SUPPORTED_CMDS
     assert "force-dashboard-render" in mod._SUPPORTED_CMDS
 
-    rej = mod.dashmgr_enqueue(
-        "inspect-undocked-render", overlay_key="steam.overlay.other"
-    )
-    assert rej["ok"] is False
-    assert "asterism.desktop" in rej["error"]
-
-    ok = mod.dashmgr_enqueue(
-        "inspect-undocked-render", overlay_key="asterism.desktop.app.2"
-    )
-    assert ok["ok"] is True
+    for cmd in ("inspect-undocked-render", "inspect-undocked-instance"):
+        rej = mod.dashmgr_enqueue(cmd, overlay_key="steam.overlay.other")
+        assert rej["ok"] is False
+        assert "asterism.desktop" in rej["error"]
+        ok = mod.dashmgr_enqueue(cmd, overlay_key="asterism.desktop.app.2")
+        assert ok["ok"] is True
 
     # force-dashboard-render: no overlay_key required
     force = mod.dashmgr_enqueue("force-dashboard-render")

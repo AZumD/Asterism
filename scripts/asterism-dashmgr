@@ -13,6 +13,7 @@
 #   asterism-dashmgr get-live-world asterism.desktop.app.2
 #   asterism-dashmgr find-live-uo asterism.desktop.app.2
 #   asterism-dashmgr inspect-undocked-render asterism.desktop.app.2
+#   asterism-dashmgr inspect-undocked-instance asterism.desktop.app.2
 #   asterism-dashmgr force-dashboard-render
 #   asterism-dashmgr save-world display-1
 #   asterism-dashmgr restore-display display-1 [--hand-fallback]
@@ -121,6 +122,10 @@ PY
   inspect-undocked-render)
     key=${1:?overlay key}
     req "$(python3 -c "import json; print(json.dumps({'cmd':'inspect-undocked-render','wait':10,'overlay_key':'$key'}))")"
+    ;;
+  inspect-undocked-instance)
+    key=${1:?overlay key}
+    req "$(python3 -c "import json; print(json.dumps({'cmd':'inspect-undocked-instance','wait':10,'overlay_key':'$key'}))")"
     ;;
   force-dashboard-render)
     req "$(python3 -c "import json; print(json.dumps({'cmd':'force-dashboard-render','wait':10}))")"

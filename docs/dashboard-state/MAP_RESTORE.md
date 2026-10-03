@@ -92,6 +92,7 @@ CLI:
 
 - `asterism-dashmgr find-live-uo <overlay-key>`
 - `asterism-dashmgr inspect-undocked-render <overlay-key>` (Case A vs B + inert `element.type` source metadata; never invoke/mount)
+- `asterism-dashmgr inspect-undocked-instance <overlay-key>` (weak fiber: mounted even if `xfTransform` null; primary+alternate)
 - `asterism-dashmgr force-dashboard-render` (diagnostic `Dashboard.forceUpdate` only)
 - `asterism-dashmgr direct-restore <overlay-key> <transform.json>` (fiber first)
 - `asterism-dashmgr get-live-world <overlay-key>` (after ~1s; setState is async)

@@ -7,6 +7,7 @@ Script: `test/test_fiber_direct_restore.py`
 No-SteamVR tests for:
 
 - bounded React fiber walk / cycles / frameID match
+- weak `inspect-undocked-instance` (null xfTransform + alternate dedup)
 - shell direct-restore fiber markers
 - broken v2 / contingency v2.1 stage script checks
 - deploy readonly trap ordering
