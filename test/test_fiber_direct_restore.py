@@ -15,9 +15,11 @@ sys.path.insert(0, str(ROOT))
 
 from spatial.react_fiber import (  # noqa: E402
     find_live_undocked_overlay,
+    find_mounted_undocked_overlay,
     inspect_undocked_instance,
     is_undocked_like,
     is_weak_undocked_instance,
+    simulate_direct_restore,
 )
 from spatial.spatial_state import validate_transform  # noqa: E402
 
@@ -147,7 +149,64 @@ def test_inspect_undocked_instance_weak_and_alternate() -> None:
     # Strong find still requires non-null xf
     miss = find_live_undocked_overlay(root, 42)
     assert miss["diag"]["found"] is False
+    assert miss["diag"].get("mountedWeak") is True
+    # Weak mounted finder returns the instance
+    weak_hit = find_mounted_undocked_overlay(root, 42)
+    assert weak_hit["instance"] is mounted
+    assert weak_hit["diag"]["xfTransformNullish"] is True
     print("OK weak instance + alternate dedup")
+
+
+def test_direct_restore_init_from_null_and_replace() -> None:
+    # 1) mounted + xf null → initialize P
+    inst = _inst(42, xf=None)
+    map_store: dict = {}
+    r = simulate_direct_restore(
+        dock_is_world=True, instance=inst, transform=SAMPLE_P, map_store=map_store
+    )
+    assert r["ok"] is True
+    assert r["previousXfTransformNullish"] is True
+    assert r["initializedFromNull"] is True
+    assert inst.state.xfTransform == SAMPLE_P
+    assert map_store["World"] == SAMPLE_P
+
+    # 2) mounted + xf Q → replace with P
+    inst2 = _inst(42, xf=dict(SAMPLE_P))
+    inst2.state.xfTransform = {
+        "translation": {"x": 1.0, "y": 0.0, "z": 0.0},
+        "rotation": {"w": 1.0, "x": 0.0, "y": 0.0, "z": 0.0},
+        "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+    }
+    q = inst2.state.xfTransform
+    r2 = simulate_direct_restore(
+        dock_is_world=True, instance=inst2, transform=SAMPLE_P, map_store={}
+    )
+    assert r2["ok"] is True
+    assert r2["previousXfTransformNullish"] is False
+    assert r2["initializedFromNull"] is False
+    assert inst2.state.xfTransform == SAMPLE_P
+    assert inst2.state.xfTransform is not q or inst2.state.xfTransform["translation"]["x"] == 0.9
+
+    # 3) no mounted instance
+    r3 = simulate_direct_restore(
+        dock_is_world=True, instance=None, transform=SAMPLE_P
+    )
+    assert r3["ok"] is False
+    assert r3["instanceFound"] is False
+
+    # 4) wrong frameID → weak finder misses (no mutation)
+    wrong = _inst(99, xf=None)
+    hit = find_mounted_undocked_overlay(_fiber(state_node=wrong), 42)
+    assert hit["instance"] is None
+    assert wrong.state.xfTransform is None
+
+    # 5) non-World presentation refused
+    r5 = simulate_direct_restore(
+        dock_is_world=False, instance=inst, transform=SAMPLE_P
+    )
+    assert r5["ok"] is False
+    assert "World" in r5["error"]
+    print("OK direct-restore weak init cases")
 
 
 def test_shell_fiber_direct_restore_markers() -> None:
@@ -164,12 +223,23 @@ def test_shell_fiber_direct_restore_markers() -> None:
         "inspectRenderUndockedSafe",
         "inspectUndockedRender",
         "inspectUndockedInstance",
+        "findMountedUndockedOverlayForFrame",
         "isWeakUndockedInstance",
+        "initializedFromNull",
+        "previousXfTransformNullish",
         "forceDashboardRender",
         "dockLocation must be World for direct restore",
         "function restoreViaHand",
     ):
         assert n in shell, n
+    # direct-restore must use weak mounted finder, not strict find-live
+    dr = shell[
+        shell.index("function directRestore") : shell.index("function getLiveWorld")
+    ]
+    assert "findMountedUndockedOverlayForFrame" in dr
+    assert "findLiveUndockedOverlayForFrame" not in dr
+    # find-live-uo remains strict
+    assert "mounted but xfTransform nullish (strict find-live-uo)" in shell
     # Must not require v2 as only path
     assert "need chunk bridge v2" not in shell or "react-fiber" in shell
     assert "applyWorldTransformForSummonKey unavailable (need chunk bridge v2)" not in shell
@@ -286,6 +356,7 @@ def main() -> int:
     test_fiber_cycle_and_malformed()
     test_signature_requires_xf_and_setstate()
     test_inspect_undocked_instance_weak_and_alternate()
+    test_direct_restore_init_from_null_and_replace()
     test_shell_fiber_direct_restore_markers()
     test_transform_validation()
     test_v2_patch_static_analysis()

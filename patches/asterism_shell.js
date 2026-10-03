@@ -273,10 +273,10 @@
 
   /**
    * Bounded child/sibling walk; collects weak matches. Dedup via seenStateNodes.
-   * Returns {candidates, visited} — never mutates React state.
+   * Returns {matches:[{instance,snap}], visited}. Never serialize matches.instance.
    */
   function walkFiberTreeWeak(root, frameID, treeName, seenStateNodes) {
-    var candidates = [];
+    var matches = [];
     var stack = root ? [root] : [];
     var visitedFibers = typeof Set !== "undefined" ? new Set() : null;
     var count = 0;
@@ -291,15 +291,14 @@
       try {
         var sn = fiber.stateNode;
         if (isWeakUndockedInstance(sn, frameID)) {
-          if (seenStateNodes) {
-            if (seenStateNodes.has(sn)) {
-              // same instance already reported from the other tree
-            } else {
-              seenStateNodes.add(sn);
-              candidates.push(weakInstanceCandidateDiag(sn, treeName));
-            }
+          if (seenStateNodes && seenStateNodes.has(sn)) {
+            // same instance already reported from the other tree
           } else {
-            candidates.push(weakInstanceCandidateDiag(sn, treeName));
+            if (seenStateNodes) seenStateNodes.add(sn);
+            matches.push({
+              instance: sn,
+              snap: weakInstanceCandidateDiag(sn, treeName),
+            });
           }
         }
       } catch (_) {}
@@ -308,7 +307,74 @@
         if (fiber.sibling) stack.push(fiber.sibling);
       } catch (_) {}
     }
-    return { candidates: candidates, visited: count };
+    return { matches: matches, visited: count };
+  }
+
+  /**
+   * Internal mounted-instance finder (weak identity). Searches primary then
+   * alternate; may return instance with state.xfTransform == null.
+   */
+  function findMountedUndockedOverlayForFrame(frame) {
+    var frameID = frame && frame.frameID != null ? String(frame.frameID) : null;
+    var diag = {
+      ok: false,
+      frameID: frameID,
+      found: false,
+      identity: "weak",
+      primaryVisited: 0,
+      alternatePresent: false,
+      alternateVisited: 0,
+      xfTransformNullish: null,
+    };
+    if (!frameID) {
+      diag.error = "no frameID";
+      return { instance: null, diag: diag };
+    }
+    var dash = window.Dashboard;
+    if (!dash || !dash._reactInternals) {
+      diag.error = "Dashboard._reactInternals missing";
+      return { instance: null, diag: diag };
+    }
+    var seen = typeof Set !== "undefined" ? new Set() : null;
+    var primary = walkFiberTreeWeak(
+      dash._reactInternals,
+      frameID,
+      "primary",
+      seen
+    );
+    diag.primaryVisited = primary.visited;
+    var altRoot = null;
+    try {
+      altRoot = dash._reactInternals.alternate;
+    } catch (_) {}
+    diag.alternatePresent = !!(altRoot && typeof altRoot === "object");
+    var alternate = { matches: [], visited: 0 };
+    if (diag.alternatePresent) {
+      alternate = walkFiberTreeWeak(altRoot, frameID, "alternate", seen);
+    }
+    diag.alternateVisited = alternate.visited;
+    var hit =
+      (primary.matches && primary.matches[0]) ||
+      (alternate.matches && alternate.matches[0]) ||
+      null;
+    if (!hit) {
+      diag.error =
+        primary.visited + alternate.visited >= FIBER_WALK_MAX
+          ? "fiber cap reached"
+          : "no matching mounted instance";
+      return { instance: null, diag: diag };
+    }
+    var xfNullish = true;
+    try {
+      xfNullish =
+        !hit.instance.state || hit.instance.state.xfTransform == null;
+    } catch (_) {}
+    diag.ok = true;
+    diag.found = true;
+    diag.tree = hit.snap && hit.snap.tree;
+    diag.xfTransformNullish = xfNullish;
+    diag.candidateCount = primary.matches.length + alternate.matches.length;
+    return { instance: hit.instance, diag: diag };
   }
 
   /**
@@ -349,8 +415,7 @@
         candidates: [],
       };
     }
-    var seen =
-      typeof Set !== "undefined" ? new Set() : null;
+    var seen = typeof Set !== "undefined" ? new Set() : null;
     var primary = walkFiberTreeWeak(
       dash._reactInternals,
       targetFrameID,
@@ -362,7 +427,7 @@
       altRoot = dash._reactInternals.alternate;
     } catch (_) {}
     var alternatePresent = !!(altRoot && typeof altRoot === "object");
-    var alternate = { candidates: [], visited: 0 };
+    var alternate = { matches: [], visited: 0 };
     if (alternatePresent) {
       alternate = walkFiberTreeWeak(
         altRoot,
@@ -371,7 +436,14 @@
         seen
       );
     }
-    var candidates = primary.candidates.concat(alternate.candidates);
+    var candidates = [];
+    var i;
+    for (i = 0; i < primary.matches.length; i++) {
+      candidates.push(primary.matches[i].snap);
+    }
+    for (i = 0; i < alternate.matches.length; i++) {
+      candidates.push(alternate.matches[i].snap);
+    }
     return {
       ok: true,
       path: "react-fiber-weak",
@@ -383,61 +455,53 @@
       alternateVisited: alternate.visited,
       candidates: candidates,
       note:
-        "weak identity (setState+frameID); xfTransform may be null — distinguishes mounted-vs-unmounted for find-live-uo",
+        "weak identity (setState+frameID); xfTransform may be null — Null xfTransform is not evidence of unmounted",
     };
   }
 
   /**
-   * Bounded walk of Dashboard React fiber subtree (child/sibling only).
-   * Returns live class instance internally; never serialize instance/fiber.
+   * STRICT diagnostic finder: mounted weak instance AND non-null xfTransform.
+   * find-live-uo keeps this meaning; direct-restore uses weak finder instead.
    */
   function findLiveUndockedOverlayForFrame(frame) {
-    var frameID = frame && frame.frameID != null ? String(frame.frameID) : null;
+    var mounted = findMountedUndockedOverlayForFrame(frame);
     var diag = {
       ok: false,
-      frameID: frameID,
+      frameID: mounted.diag.frameID,
       found: false,
-      visited: 0,
+      identity: "strict",
+      visited:
+        (mounted.diag.primaryVisited || 0) +
+        (mounted.diag.alternateVisited || 0),
+      primaryVisited: mounted.diag.primaryVisited,
+      alternatePresent: mounted.diag.alternatePresent,
+      alternateVisited: mounted.diag.alternateVisited,
+      mountedWeak: !!(mounted.diag && mounted.diag.found),
+      xfTransformNullish: mounted.diag.xfTransformNullish,
     };
-    if (!frameID) {
-      diag.error = "no frameID";
+    if (!mounted.instance) {
+      diag.error = mounted.diag.error || "no matching live instance";
       return { instance: null, diag: diag };
     }
-    var dash = window.Dashboard;
-    if (!dash || !dash._reactInternals) {
-      diag.error = "Dashboard._reactInternals missing";
+    var xf = null;
+    try {
+      xf = mounted.instance.state && mounted.instance.state.xfTransform;
+    } catch (_) {}
+    if (xf == null) {
+      diag.error = "mounted but xfTransform nullish (strict find-live-uo)";
+      diag.xfTransformNullish = true;
       return { instance: null, diag: diag };
     }
-    var stack = [dash._reactInternals];
-    var visited = typeof Set !== "undefined" ? new Set() : null;
-    var count = 0;
-    while (stack.length && count < FIBER_WALK_MAX) {
-      var fiber = stack.pop();
-      if (!fiber || typeof fiber !== "object") continue;
-      if (visited) {
-        if (visited.has(fiber)) continue;
-        visited.add(fiber);
-      }
-      count++;
-      try {
-        var sn = fiber.stateNode;
-        if (isUndockedLikeInstance(sn, frameID)) {
-          diag.ok = true;
-          diag.found = true;
-          diag.visited = count;
-          diag.signature = { hasSetState: true, hasXfTransform: true };
-          return { instance: sn, diag: diag };
-        }
-      } catch (_) {}
-      try {
-        if (fiber.child) stack.push(fiber.child);
-        if (fiber.sibling) stack.push(fiber.sibling);
-      } catch (_) {}
+    // Keep isUndockedLikeInstance as the documented strict gate.
+    if (!isUndockedLikeInstance(mounted.instance, mounted.diag.frameID)) {
+      diag.error = "strict signature failed";
+      return { instance: null, diag: diag };
     }
-    diag.visited = count;
-    diag.error =
-      count >= FIBER_WALK_MAX ? "fiber cap reached" : "no matching live instance";
-    return { instance: null, diag: diag };
+    diag.ok = true;
+    diag.found = true;
+    diag.tree = mounted.diag.tree;
+    diag.signature = { hasSetState: true, hasXfTransform: true };
+    return { instance: mounted.instance, diag: diag };
   }
 
   /** Safe static inspect — do not invoke render outside React. */
@@ -990,6 +1054,7 @@
         ok: false,
         error: "no frame/docking",
         resolve: resolveFramesReport(overlayKey),
+        instanceFound: false,
       };
     }
     var dockLoc = frame.docking.dockLocation;
@@ -999,68 +1064,88 @@
         error: "dockLocation must be World for direct restore",
         dockLocationName: ywqName(dockLoc),
         path: "react-fiber-setState+map",
+        instanceFound: false,
       };
     }
 
-    // Preferred: shell-only via Dashboard React fiber (no Valve chunk v2).
-    var found = findLiveUndockedOverlayForFrame(frame);
-    if (found.instance) {
-      var map = frame.docking.m_mapLastRelativeTransformForDockLocation;
-      if (!map || typeof map.set !== "function") {
-        return { ok: false, error: "map missing", live: found.diag };
-      }
-      try {
-        map.set(e.World, plain);
-        found.instance.setState({ xfTransform: plain });
-      } catch (err) {
-        return {
-          ok: false,
-          error: String(err),
-          path: "react-fiber-setState+map",
-          live: found.diag,
-        };
-      }
-      var snap = frameSnapshot(frame);
+    // Weak mounted finder: xfTransform may still be null at cold World mount.
+    var mounted = findMountedUndockedOverlayForFrame(frame);
+    if (!mounted.instance) {
       return {
-        ok: true,
+        ok: false,
+        error: "no mounted UndockedOverlay instance via React fiber",
         path: "react-fiber-setState+map",
-        frameID: String(frame.frameID),
-        dockLocationName: "World",
-        liveInstanceFound: true,
-        live: found.diag,
-        requested: plain,
-        capture: snap,
-        note:
-          "setState is async — call get-live-world after ~1s for numerical proof; experimental until live-validated",
+        instanceFound: false,
+        liveInstanceFound: false,
+        previousXfTransformNullish: null,
+        initializedFromNull: false,
+        live: mounted.diag,
       };
     }
 
-    // Optional: chunk bridge v2 apply (discouraged; prior v2 caused black rectangle).
-    var bridge = window.__ASTERISM_STEAMVR;
-    if (bridge && typeof bridge.applyWorldTransformForSummonKey === "function") {
-      try {
-        var applied = bridge.applyWorldTransformForSummonKey(overlayKey, plain);
-        return {
-          ok: !!(applied && applied.ok),
-          path: (applied && applied.path) || "chunk-bridge-v2",
-          applied: applied,
-          liveInstanceFound: false,
-          fiber: found.diag,
-          requested: plain,
-          note: "fell back to chunk bridge apply; prefer fiber path",
-        };
-      } catch (err2) {
-        return { ok: false, error: String(err2), fiber: found.diag };
-      }
+    var previousXfTransformNullish = true;
+    try {
+      previousXfTransformNullish =
+        !mounted.instance.state ||
+        mounted.instance.state.xfTransform == null;
+    } catch (_) {}
+
+    var map = frame.docking.m_mapLastRelativeTransformForDockLocation;
+    if (!map || typeof map.set !== "function") {
+      return {
+        ok: false,
+        error: "map missing",
+        path: "react-fiber-setState+map",
+        instanceFound: true,
+        previousXfTransformNullish: previousXfTransformNullish,
+        initializedFromNull: false,
+        live: mounted.diag,
+      };
+    }
+    try {
+      map.set(e.World, plain);
+      mounted.instance.setState({ xfTransform: plain });
+    } catch (err) {
+      return {
+        ok: false,
+        error: String(err),
+        path: "react-fiber-setState+map",
+        instanceFound: true,
+        previousXfTransformNullish: previousXfTransformNullish,
+        initializedFromNull: false,
+        live: mounted.diag,
+      };
     }
 
+    // Optional same-turn observe (setState may still be async).
+    var postNullish = true;
+    var postXf = null;
+    try {
+      postNullish =
+        !mounted.instance.state ||
+        mounted.instance.state.xfTransform == null;
+      if (!postNullish) {
+        postXf = cloneTransform(mounted.instance.state.xfTransform);
+      }
+    } catch (_) {}
+
+    var snap = frameSnapshot(frame);
     return {
-      ok: false,
-      error: "no live UndockedOverlay instance via React fiber",
+      ok: true,
       path: "react-fiber-setState+map",
-      liveInstanceFound: false,
-      live: found.diag,
-      bridgeVersion: bridge && bridge.version,
+      frameID: String(frame.frameID),
+      dockLocationName: "World",
+      instanceFound: true,
+      liveInstanceFound: true,
+      previousXfTransformNullish: previousXfTransformNullish,
+      initializedFromNull: previousXfTransformNullish,
+      postSetStateXfNullish: postNullish,
+      postSetStateXf: postXf,
+      live: mounted.diag,
+      requested: plain,
+      capture: snap,
+      note:
+        "weak-mounted init allowed; verify with get-live-world (strict) after React applies setState",
     };
   }
 

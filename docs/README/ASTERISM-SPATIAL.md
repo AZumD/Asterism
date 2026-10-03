@@ -74,9 +74,17 @@ seed-presentation-transform(world, P)   # if transforms.world exists
 set-presentation dashboard
 POST /show                              # visibility/materialization only
 set-presentation world
-wait dockLocation==World AND find-live-uo
-direct-restore(P)                       # if transforms.world exists
+wait dockLocation==World AND inspect-undocked-instance (weak mount)
+direct-restore(P)                       # if transforms.world exists; may init null xf
+verify get-live-world == P              # strict path
 POST /hide                              # best-effort; never masks primary error
 ```
+
+A mounted `UndockedOverlay` may exist at cold startup with
+`state.xfTransform` undefined. Null `xfTransform` is **not** evidence the
+component is unmounted. Readiness uses weak identity; `find-live-uo` stays
+strict (mounted + non-null xf) for diagnostics only.
+
+Without a saved World transform, materialize only — do not invent a pose.
 
 No hand/controller fallback on normal startup.

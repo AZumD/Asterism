@@ -186,12 +186,37 @@ def test_world_restore_presentation_first() -> None:
                     "capture": {"dockLocationName": name},
                 },
             }
-        if cmd == "find-live-uo":
-            return {"ok": True, "result": {"ok": True, "live": {"found": True}}}
+        if cmd == "inspect-undocked-instance":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "candidateCount": 1,
+                    "targetFrameID": "42",
+                    "candidates": [
+                        {
+                            "frameID": "42",
+                            "xfTransformNullish": True,
+                            "tree": "primary",
+                        }
+                    ],
+                },
+            }
         if cmd == "direct-restore":
             return {
                 "ok": True,
-                "result": {"ok": True, "path": "react-fiber-setState+map"},
+                "result": {
+                    "ok": True,
+                    "path": "react-fiber-setState+map",
+                    "instanceFound": True,
+                    "previousXfTransformNullish": True,
+                    "initializedFromNull": True,
+                },
+            }
+        if cmd == "get-live-world":
+            return {
+                "ok": True,
+                "result": {"ok": True, "path": "react-fiber", "xfTransform": P},
             }
         raise AssertionError(cmd)
 
@@ -217,12 +242,16 @@ def test_world_restore_presentation_first() -> None:
                         )
         assert r["ok"], r
         assert "restore-via-hand" not in calls
+        assert "find-live-uo" not in calls
         assert calls[0] == "seed-presentation-transform"
         assert modes == ["dashboard", "world"]
         assert http_actions == ["show", "hide"]
-        assert calls.index("direct-restore") > calls.index("find-live-uo")
+        assert calls.index("direct-restore") > calls.index("inspect-undocked-instance")
+        assert calls.index("get-live-world") > calls.index("direct-restore")
         assert "seed-presentation-transform" in calls
         assert r["materialization"]["live_ready"] is True
+        assert r["direct"]["initializedFromNull"] is True
+        assert r["verify"]["ok"] is True
         assert r["path"] == "world-materialization+direct-restore"
     print("OK world restore order")
 
@@ -292,12 +321,22 @@ def test_world_no_transform_still_materializes() -> None:
                 "ok": True,
                 "result": {"ok": True, "capture": {"dockLocationName": "World"}},
             }
-        if cmd == "find-live-uo":
-            return {"ok": True, "result": {"ok": True, "live": {"found": True}}}
+        if cmd == "inspect-undocked-instance":
+            return {
+                "ok": True,
+                "result": {
+                    "ok": True,
+                    "candidateCount": 1,
+                    "targetFrameID": "42",
+                    "candidates": [{"frameID": "42", "xfTransformNullish": True}],
+                },
+            }
         if cmd == "seed-presentation-transform":
             raise AssertionError("should not seed without transform")
         if cmd == "direct-restore":
             raise AssertionError("should not direct-restore without transform")
+        if cmd == "get-live-world":
+            raise AssertionError("should not get-live-world without transform")
         raise AssertionError(cmd)
 
     with tempfile.TemporaryDirectory() as td:

@@ -98,19 +98,18 @@ CLI:
 - `asterism-dashmgr get-live-world <overlay-key>` (after ~1s; setState is async)
 - `asterism-dashmgr restore-via-hand …` (proven diagnostic fallback)
 
-Broken World after fresh SteamVR restart (`dockLocation==World`, no fiber UO):
+Cold automatic World restore live finding:
+
+- Frame may be World + in `frames_local_undocked` + weak-mounted `UndockedOverlay`
+  while `state.xfTransform` is still undefined.
+- Null `xfTransform` ≠ unmounted. Readiness uses `inspect-undocked-instance`;
+  `direct-restore` initializes from saved P; `get-live-world` verifies strictly.
 
 ```
-inspect-undocked-render app.2
-find-live-uo app.2
-force-dashboard-render
-# sleep 1
-find-live-uo app.2
-get-live-world app.2
+inspect-undocked-instance app.2   # candidateCount>=1, maybe xfTransformNullish
+direct-restore app.2 P.json       # initializes xf when nullish
+get-live-world app.2              # strict; must match P
 ```
-
-Case A: `targetPresent=true`, fiber appears after `forceUpdate` → React invalidation.  
-Case B: `targetPresent=false` → Frame Manager bookkeeping; do not chase re-render hacks.
 
 Contingency Valve patch (Asterism-only register):  
 `scripts/stage-steamvr-dashmgr-bridge-v2.1.sh` — stage only if fiber fails live.

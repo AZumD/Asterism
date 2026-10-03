@@ -194,8 +194,10 @@ def test_shell_commands_present() -> None:
         "function restoreViaHand",
         "function inspectUndockedRender",
         "function inspectUndockedInstance",
+        "function findMountedUndockedOverlayForFrame",
         "function forceDashboardRender",
         "findLiveUndockedOverlayForFrame",
+        "initializedFromNull",
         "react-fiber-setState+map",
         "JSON-safe Frame resolve",
     ):

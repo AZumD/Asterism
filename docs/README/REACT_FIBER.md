@@ -9,32 +9,36 @@ Locate live `UndockedOverlay` class instances via
 `window.Dashboard._reactInternals` without Valve chunk lifecycle patches.
 
 Walk only `fiber.child` / `fiber.sibling`, capped (default 8000), with a
-visited set. Strong match (`find-live-uo` / direct-restore) requires:
+visited set. **Weak identity** (`findMountedUndockedOverlayForFrame` / `inspect-undocked-instance`
+/ World readiness / `direct-restore`):
 
 - `typeof setState === "function"`
 - `props.frame.frameID` equals target
-- `state.xfTransform` present (non-null)
+- `state.xfTransform` may be null/undefined
 
-Weak match (`inspect-undocked-instance`) drops the xfTransform requirement.
-UndockedOverlay constructs with `state.xfTransform = undefined` and only fills
-it later via `setInitialTransformForLocation`, so strong match alone cannot
-distinguish “not mounted” from “mounted, xf still null”.
+**Strict identity** (`find-live-uo` / `get-live-world` verify):
+
+- weak identity **and** `state.xfTransform != null`
+
+UndockedOverlay constructs with `state.xfTransform = undefined`;
+`componentDidMount` later calls `setInitialTransformForLocation(undefined)`.
+Automatic World restore therefore initializes via `setState({ xfTransform: P })`
+on a weak-mounted instance when Asterism has a saved World transform P.
 
 Never serialize React instances over the wire — diagnostics only.
 
-## Case A / Case B diagnostics
-
-When `dockLocationName == World` but fiber has no matching `UndockedOverlay`:
+## Diagnostics
 
 | Command | Role |
 | --- | --- |
-| `inspect-undocked-render <key>` | Call `renderUndockedLocalFrameTransforms` only if source is known-safe; report `targetPresent` plus per-element inert `type*` / `propsKeys` / source-mention flags (never invoke `element.type`) |
-| `inspect-undocked-instance <key>` | Weak fiber walk on `_reactInternals` + `.alternate` (deduped stateNodes); reports mounted candidates even when `xfTransform` is null |
-| `force-dashboard-render` | `Dashboard.forceUpdate()` once (diagnostic; not auto-persistence) |
-| `find-live-uo <key>` | Strong fiber walk — requires non-null `xfTransform` (unchanged) |
+| `inspect-undocked-render <key>` | Safe `renderUndockedLocalFrameTransforms` + inert type metadata |
+| `inspect-undocked-instance <key>` | Weak fiber walk (primary+alternate); readiness signal |
+| `find-live-uo <key>` | Strict diagnostic (mounted + non-null xf) |
+| `direct-restore` | Weak mount + `map[World]=P` + `setState`; reports `initializedFromNull` |
+| `get-live-world` | Strict live pose verify after restore |
 
-Interpretation: `targetPresent=true` + weak `candidateCount=0` → not mounted.  
-`candidateCount>0` + `xfTransformNullish=true` → mounted but transform uninitialized.  
-`targetPresent=false` → Case B (Frame Manager bookkeeping).
+Live finding: a mounted UndockedOverlay may exist at cold startup with
+`state.xfTransform` undefined. Null xfTransform is not evidence of unmounted.
 
-Covered by `test/test_undocked_render_diag.py`, `test/test_fiber_direct_restore.py`.
+Covered by `test/test_undocked_render_diag.py`, `test/test_fiber_direct_restore.py`,
+`test/test_spatial_lifecycle.py`.

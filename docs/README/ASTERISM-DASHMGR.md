@@ -38,8 +38,8 @@ asterism-dashmgr save-world display-1
 asterism-dashmgr restore-display display-1 [--hand-fallback]
 ```
 
-- `direct-restore` prefers shell React-fiber `setState` on chunk **v1**.
-- `find-live-uo` strong fiber match (requires non-null `xfTransform`) — JSON-safe.
+- `direct-restore` uses **weak** mounted fiber identity + `setState({xfTransform:P})` (may initialize from null). Requires World docking.
+- `find-live-uo` **strict** fiber match (requires non-null `xfTransform`) — diagnostic only; not used for World readiness.
 - `inspect-undocked-render` invokes `Dashboard.renderUndockedLocalFrameTransforms` only when its source matches the known safe `frames_local_undocked.map(createElement({frame}))` shape; returns JSON-safe `{ok,count,frames[],targetFrameID,targetPresent}` plus per-element inert `typeKind` / `typeName` / `typeDisplayName` / `typeSourcePreview` / `propsKeys` / mention flags (never React elements; never invokes `element.type`). Distinguishes Case A (in `frames_local_undocked`, fiber missing) vs Case B (never in the undocked list).
 - `inspect-undocked-instance` weak fiber walk (`setState` + matching `frameID` only) across `_reactInternals` and `.alternate`; reports mounted candidates even when `xfTransform` is still undefined. Read-only; does not change `find-live-uo` / direct-restore.
 - `force-dashboard-render` calls `Dashboard.forceUpdate()` if present — diagnostic only; not wired into automatic persistence.

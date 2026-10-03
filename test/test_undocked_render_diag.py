@@ -27,6 +27,7 @@ def test_shell_inspect_and_force_markers() -> None:
         "function elementFrameDiag",
         "function inspectUndockedRender",
         "function inspectUndockedInstance",
+        "function findMountedUndockedOverlayForFrame",
         "function isWeakUndockedInstance",
         "function forceDashboardRender",
         'msg.cmd === "inspect-undocked-render"',

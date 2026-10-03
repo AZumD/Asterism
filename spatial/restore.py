@@ -327,12 +327,35 @@ def _wait_presentation(
     return {"ok": False, "error": f"timeout waiting for {want}", "last": last}
 
 
+def _transforms_match(a: Any, b: Any, *, eps: float = 1e-3) -> bool:
+    """Compare validated World transforms (translation + rotation)."""
+    try:
+        va = validate_transform(a)
+        vb = validate_transform(b)
+    except Exception:
+        return False
+    ta, tb = va["translation"], vb["translation"]
+    for k in ("x", "y", "z"):
+        if abs(float(ta[k]) - float(tb[k])) > eps:
+            return False
+    ra, rb = va["rotation"], vb["rotation"]
+    for k in ("w", "x", "y", "z"):
+        if abs(float(ra[k]) - float(rb[k])) > eps:
+            return False
+    return True
+
+
 def _wait_world_ready(
     overlay_key: str,
     *,
     http: str,
     timeout: float = 25.0,
 ) -> dict[str, Any]:
+    """Wait until dockLocation==World AND a weak-mounted UndockedOverlay exists.
+
+    Nullish xfTransform is OK — cold World mount often has state.xfTransform
+    undefined until initialized. Strict find-live-uo is not used for readiness.
+    """
     deadline = time.time() + timeout
     last: dict[str, Any] = {}
     while time.time() < deadline:
@@ -348,21 +371,40 @@ def _wait_world_ready(
                 (cap.get("capture") or {}).get("dockLocationName")
             )
             if pres == "world":
-                find = _result(
+                weak = _result(
                     dashmgr_request(
-                        "find-live-uo", http=http, overlay_key=overlay_key, wait=8.0
+                        "inspect-undocked-instance",
+                        http=http,
+                        overlay_key=overlay_key,
+                        wait=8.0,
                     )
                 )
-                last["find"] = {
-                    "ok": find.get("ok"),
-                    "live": find.get("live"),
+                count = int(weak.get("candidateCount") or 0)
+                target = weak.get("targetFrameID")
+                cands = weak.get("candidates") or []
+                unique_ok = count == 1 or (
+                    count >= 1
+                    and target is not None
+                    and all(str(c.get("frameID")) == str(target) for c in cands)
+                )
+                last["mounted"] = {
+                    "ok": weak.get("ok"),
+                    "candidateCount": count,
+                    "targetFrameID": target,
+                    "unique_ok": unique_ok,
+                    "xfTransformNullish": (cands[0].get("xfTransformNullish") if cands else None),
                 }
-                if find.get("ok") or (find.get("live") or {}).get("found"):
+                if weak.get("ok") and count >= 1 and unique_ok:
                     return {"ok": True, "ready": True, "last": last}
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             last["error"] = str(e)
         time.sleep(0.4)
-    return {"ok": False, "ready": False, "last": last, "error": "timeout waiting for World+UO"}
+    return {
+        "ok": False,
+        "ready": False,
+        "last": last,
+        "error": "timeout waiting for World+mounted UndockedOverlay",
+    }
 
 
 def _restore_world(
@@ -473,7 +515,7 @@ def _restore_world(
         _cleanup_hide()
         return out
 
-    # 5) Wait for World + live UndockedOverlay
+    # 5) Wait for World + weak-mounted UndockedOverlay (xf may still be null)
     ready = _wait_world_ready(overlay_key, http=http)
     mat["live_ready"] = bool(ready.get("ok"))
     mat["live_wait"] = {
@@ -505,14 +547,18 @@ def _restore_world(
             _cleanup_hide()
             return out
         out["ok"] = False
-        out["error"] = ready.get("error") or "World live instance not ready"
+        out["error"] = ready.get("error") or "World mounted instance not ready"
         _cleanup_hide()
         return out
 
-    # 6) Direct restore when we have a saved World transform
+    # 6) Direct restore only when Asterism has a saved World transform P.
+    #    Without P: do not invent a pose; materialization alone is enough.
     if not world_xf:
         out["ok"] = True
-        out["note"] = "no saved world transform; materialization only"
+        out["note"] = (
+            "no saved world transform; materialization only "
+            "(weak mount may still have nullish xfTransform)"
+        )
         _cleanup_hide()
         return out
 
@@ -530,20 +576,77 @@ def _restore_world(
             "ok": direct.get("ok"),
             "path": direct.get("path"),
             "error": direct.get("error"),
+            "instanceFound": direct.get("instanceFound"),
             "liveInstanceFound": direct.get("liveInstanceFound"),
+            "previousXfTransformNullish": direct.get("previousXfTransformNullish"),
+            "initializedFromNull": direct.get("initializedFromNull"),
         }
-        out["ok"] = bool(direct.get("ok"))
-        if out["ok"]:
-            out["path"] = "world-materialization+direct-restore"
-        else:
+        if not direct.get("ok"):
+            out["ok"] = False
             out["error"] = direct.get("error") or "direct-restore failed"
+            _cleanup_hide()
+            return out
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         out["ok"] = False
         out["error"] = str(e)
+        _cleanup_hide()
+        return out
 
-    # 7) Hide dashboard after successful or failed attempt (best-effort)
+    # 7) Strict verify: poll get-live-world until xf matches saved P
+    verify = _wait_live_world_match(overlay_key, world_xf, http=http)
+    out["verify"] = {
+        "ok": verify.get("ok"),
+        "error": verify.get("error"),
+        "last": verify.get("last"),
+    }
+    out["ok"] = bool(verify.get("ok"))
+    if out["ok"]:
+        out["path"] = "world-materialization+direct-restore"
+    else:
+        out["error"] = verify.get("error") or "live xf mismatch after direct-restore"
+
+    # 8) Hide dashboard after successful or failed attempt (best-effort)
     _cleanup_hide()
     return out
+
+
+def _wait_live_world_match(
+    overlay_key: str,
+    expected: dict[str, Any],
+    *,
+    http: str,
+    timeout: float = 8.0,
+) -> dict[str, Any]:
+    """Bounded poll of strict get-live-world until xf matches expected P."""
+    deadline = time.time() + timeout
+    last: dict[str, Any] = {}
+    while time.time() < deadline:
+        try:
+            live = _result(
+                dashmgr_request(
+                    "get-live-world",
+                    http=http,
+                    overlay_key=overlay_key,
+                    wait=8.0,
+                )
+            )
+            live_xf = live.get("xfTransform")
+            last = {
+                "ok": live.get("ok"),
+                "path": live.get("path"),
+                "error": live.get("error"),
+                "has_xf": live_xf is not None,
+            }
+            if live.get("ok") and live_xf and _transforms_match(live_xf, expected):
+                return {"ok": True, "last": last, "xfTransform": live_xf}
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = {"error": str(e)}
+        time.sleep(0.25)
+    return {
+        "ok": False,
+        "last": last,
+        "error": last.get("error") or "timeout waiting for get-live-world match",
+    }
 
 
 def restore_display(
