@@ -23,6 +23,8 @@ def test_shell_inspect_and_force_markers() -> None:
     shell = (ROOT / "patches" / "asterism_shell.js").read_text(encoding="utf-8")
     for needle in (
         "function renderUndockedSourceIsKnownSafe",
+        "function elementTypeDiag",
+        "function elementFrameDiag",
         "function inspectUndockedRender",
         "function forceDashboardRender",
         'msg.cmd === "inspect-undocked-render"',
@@ -32,13 +34,36 @@ def test_shell_inspect_and_force_markers() -> None:
         "dash.forceUpdate()",
         "targetPresent",
         "source shape not recognized; refuse invoke",
-        "inert element props only",
+        "typeSourcePreview",
+        "typeKind",
+        "typeName",
+        "typeDisplayName",
+        "typeSourceLength",
+        "propsKeys",
+        "mentionsXfTransform",
+        "mentionsDockLocation",
+        "mentionsWorld",
+        "mentionsSetDockLocation",
+        "mentionsMapLastRelative",
+        "mentionsIsFullyVisible",
+        "mentionsShouldShowKeyboardHack",
+        "shouldShowKeyboardForUndockedFrame_Hack",
+        "m_mapLastRelativeTransformForDockLocation",
+        "Function.prototype.toString.call(t)",
         "inspectUndockedRender: inspectUndockedRender",
         "forceDashboardRender: forceDashboardRender",
     ):
         assert needle in shell, needle
-    # Must not serialize React elements/fibers
+    # Must not serialize React elements/fibers or invoke component types
     assert "return elements" not in shell or "elementFrameDiag" in shell
+    type_fn = shell[
+        shell.index("function elementTypeDiag") : shell.index(
+            "function elementFrameDiag"
+        )
+    ]
+    assert "t(" not in type_fn.replace("toString.call(t)", "")
+    assert "new t" not in type_fn
+    assert "React.createElement" not in type_fn
     print("OK shell Case A/B markers")
 
 
@@ -81,7 +106,7 @@ def test_known_safe_shape_contract() -> None:
     # Gate requires all four tokens
     gate = shell[
         shell.index("function renderUndockedSourceIsKnownSafe") : shell.index(
-            "function elementFrameDiag"
+            "function elementTypeDiag"
         )
     ]
     for tok in ("frames_local_undocked", ".map", "createElement", "frame"):
@@ -89,11 +114,44 @@ def test_known_safe_shape_contract() -> None:
     print("OK known-safe shape gate")
 
 
+def test_element_type_diag_contract() -> None:
+    """elementTypeDiag reports JSON-safe type metadata; preview capped."""
+    shell = (ROOT / "patches" / "asterism_shell.js").read_text(encoding="utf-8")
+    body = shell[
+        shell.index("function elementTypeDiag") : shell.index(
+            "function elementFrameDiag"
+        )
+    ]
+    assert "src.slice(0, 3000)" in body
+    assert "Object.keys(props)" in body
+    # needle strings for component-source triage
+    for s in (
+        '"xfTransform"',
+        '"dockLocation"',
+        '"World"',
+        '"SetDockLocation"',
+        '"m_mapLastRelativeTransformForDockLocation"',
+        '"isFullyVisible"',
+        '"shouldShowKeyboardForUndockedFrame_Hack"',
+    ):
+        assert s in body, s
+    # frame fields still merged in elementFrameDiag
+    frame_body = shell[
+        shell.index("function elementFrameDiag") : shell.index(
+            "function inspectUndockedRender"
+        )
+    ]
+    for s in ("frameID", "summonOverlayKey", "associatedSummonOverlayKeys", "typeKind"):
+        assert s in frame_body, s
+    print("OK element type diag contract")
+
+
 def main() -> int:
     test_shell_inspect_and_force_markers()
     test_cli_commands_present()
     test_dashmgr_enqueue_policy()
     test_known_safe_shape_contract()
+    test_element_type_diag_contract()
     print("ALL OK")
     return 0
 

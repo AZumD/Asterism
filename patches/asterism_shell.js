@@ -276,27 +276,120 @@
     );
   }
 
+  function elementTypeDiag(el) {
+    // Inert type metadata only — never invoke element.type / never serialize fibers.
+    var out = {
+      typeKind: null,
+      typeName: null,
+      typeDisplayName: null,
+      typeSourceLength: null,
+      typeSourcePreview: null,
+      propsKeys: [],
+      mentionsXfTransform: false,
+      mentionsDockLocation: false,
+      mentionsWorld: false,
+      mentionsSetDockLocation: false,
+      mentionsMapLastRelative: false,
+      mentionsIsFullyVisible: false,
+      mentionsShouldShowKeyboardHack: false,
+    };
+    try {
+      var props = el && el.props;
+      if (props && typeof props === "object") {
+        try {
+          out.propsKeys = Object.keys(props);
+        } catch (_) {}
+      }
+      var t = el && el.type;
+      out.typeKind = t === null ? "null" : typeof t;
+      if (typeof t === "string") {
+        out.typeName = t;
+        out.typeDisplayName = t;
+        return out;
+      }
+      if (typeof t === "function") {
+        try {
+          out.typeName = t.name ? String(t.name) : null;
+        } catch (_) {}
+        try {
+          out.typeDisplayName =
+            t.displayName != null
+              ? String(t.displayName)
+              : out.typeName;
+        } catch (_) {
+          out.typeDisplayName = out.typeName;
+        }
+        var src = "";
+        try {
+          src = Function.prototype.toString.call(t);
+        } catch (_) {}
+        out.typeSourceLength = src.length;
+        out.typeSourcePreview = src.slice(0, 3000);
+        out.mentionsXfTransform = src.indexOf("xfTransform") >= 0;
+        out.mentionsDockLocation = src.indexOf("dockLocation") >= 0;
+        out.mentionsWorld = src.indexOf("World") >= 0;
+        out.mentionsSetDockLocation = src.indexOf("SetDockLocation") >= 0;
+        out.mentionsMapLastRelative =
+          src.indexOf("m_mapLastRelativeTransformForDockLocation") >= 0;
+        out.mentionsIsFullyVisible = src.indexOf("isFullyVisible") >= 0;
+        out.mentionsShouldShowKeyboardHack =
+          src.indexOf("shouldShowKeyboardForUndockedFrame_Hack") >= 0;
+        return out;
+      }
+      // object/symbol/etc — name only if cheap JSON-safe fields exist
+      if (t && typeof t === "object") {
+        try {
+          if (t.displayName != null) out.typeDisplayName = String(t.displayName);
+        } catch (_) {}
+        try {
+          if (t.name != null) out.typeName = String(t.name);
+        } catch (_) {}
+        if (!out.typeDisplayName) out.typeDisplayName = out.typeName;
+      }
+    } catch (_) {}
+    return out;
+  }
+
   function elementFrameDiag(el) {
     // Inert React element description only — never return the element itself.
+    var typeSnap = elementTypeDiag(el);
     try {
       var props = el && el.props;
       var frame = props && props.frame;
-      if (!frame) return null;
       var keys = [];
-      try {
-        keys = (frame.associatedSummonOverlayKeys || []).slice();
-      } catch (_) {}
       var summon = null;
-      try {
-        summon = frame.activePage && frame.activePage.summonOverlayKey;
-      } catch (_) {}
+      var frameID = null;
+      if (frame) {
+        try {
+          keys = (frame.associatedSummonOverlayKeys || []).slice();
+        } catch (_) {}
+        try {
+          summon = frame.activePage && frame.activePage.summonOverlayKey;
+        } catch (_) {}
+        try {
+          frameID = frame.frameID != null ? String(frame.frameID) : null;
+        } catch (_) {}
+      }
       return {
-        frameID: frame.frameID != null ? String(frame.frameID) : null,
+        frameID: frameID,
         summonOverlayKey: summon,
         associatedSummonOverlayKeys: keys,
+        typeKind: typeSnap.typeKind,
+        typeName: typeSnap.typeName,
+        typeDisplayName: typeSnap.typeDisplayName,
+        typeSourceLength: typeSnap.typeSourceLength,
+        typeSourcePreview: typeSnap.typeSourcePreview,
+        propsKeys: typeSnap.propsKeys,
+        mentionsXfTransform: typeSnap.mentionsXfTransform,
+        mentionsDockLocation: typeSnap.mentionsDockLocation,
+        mentionsWorld: typeSnap.mentionsWorld,
+        mentionsSetDockLocation: typeSnap.mentionsSetDockLocation,
+        mentionsMapLastRelative: typeSnap.mentionsMapLastRelative,
+        mentionsIsFullyVisible: typeSnap.mentionsIsFullyVisible,
+        mentionsShouldShowKeyboardHack: typeSnap.mentionsShouldShowKeyboardHack,
       };
     } catch (_) {
-      return null;
+      return typeSnap;
     }
   }
 
@@ -384,7 +477,8 @@
       frames: frames,
       targetFrameID: targetFrameID,
       targetPresent: targetPresent,
-      note: "inert element props only; Case A if targetPresent&&!fiber, Case B if !targetPresent",
+      note:
+        "inert element+type metadata only (no invoke/mount); Case A if targetPresent&&!fiber, Case B if !targetPresent",
     };
   }
 

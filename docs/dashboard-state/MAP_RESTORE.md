@@ -91,7 +91,7 @@ Broken chunk bridge v2 (`83a3bcbf…`) caused a giant black rectangle **on load*
 CLI:
 
 - `asterism-dashmgr find-live-uo <overlay-key>`
-- `asterism-dashmgr inspect-undocked-render <overlay-key>` (Case A vs B: is Frame in `frames_local_undocked`?)
+- `asterism-dashmgr inspect-undocked-render <overlay-key>` (Case A vs B + inert `element.type` source metadata; never invoke/mount)
 - `asterism-dashmgr force-dashboard-render` (diagnostic `Dashboard.forceUpdate` only)
 - `asterism-dashmgr direct-restore <overlay-key> <transform.json>` (fiber first)
 - `asterism-dashmgr get-live-world <overlay-key>` (after ~1s; setState is async)

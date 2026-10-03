@@ -23,7 +23,7 @@ When `dockLocationName == World` but fiber has no matching `UndockedOverlay`:
 
 | Command | Role |
 | --- | --- |
-| `inspect-undocked-render <key>` | Call `renderUndockedLocalFrameTransforms` only if source is known-safe; report whether the Frame is in `frames_local_undocked` (`targetPresent`) |
+| `inspect-undocked-render <key>` | Call `renderUndockedLocalFrameTransforms` only if source is known-safe; report `targetPresent` plus per-element inert `type*` / `propsKeys` / source-mention flags (never invoke `element.type`) |
 | `force-dashboard-render` | `Dashboard.forceUpdate()` once (diagnostic; not auto-persistence) |
 | `find-live-uo <key>` | Fiber walk — was a live UO mounted? |
 
